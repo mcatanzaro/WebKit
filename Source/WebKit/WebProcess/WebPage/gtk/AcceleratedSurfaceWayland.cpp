@@ -24,61 +24,49 @@
  */
 
 #include "config.h"
-#include "AcceleratedSurface.h"
-
-#include "WebPage.h"
-#include <WebCore/PlatformDisplay.h>
+#include "AcceleratedSurfaceWayland.h"
 
 #if PLATFORM(WAYLAND)
-#include "AcceleratedSurfaceWayland.h"
-#endif
 
-#if PLATFORM(X11)
-#include "AcceleratedSurfaceX11.h"
-#endif
-
-#if USE(WPE_RENDERER)
-#include "AcceleratedSurfaceLibWPE.h"
-#endif
+#include "WaylandCompositorDisplay.h"
+#include "WebProcess.h"
+#include <wayland-egl.h>
 
 namespace WebKit {
 using namespace WebCore;
 
-std::unique_ptr<AcceleratedSurface> AcceleratedSurface::create(WebPage& webPage, Client& client)
+std::unique_ptr<AcceleratedSurfaceWayland> AcceleratedSurfaceWayland::create(WebPage& webPage, Client& client)
 {
-#if PLATFORM(WAYLAND)
-    if (PlatformDisplay::sharedDisplay().type() == PlatformDisplay::Type::Wayland)
-        return AcceleratedSurfaceLibWPE::create(webPage, client);
-#endif
-#if PLATFORM(X11)
-    if (PlatformDisplay::sharedDisplay().type() == PlatformDisplay::Type::X11)
-        return AcceleratedSurfaceX11::create(webPage, client);
-#endif
-#if USE(WPE_RENDERER)
-    if (PlatformDisplay::sharedDisplay().type() == PlatformDisplay::Type::WPE)
-        return AcceleratedSurfaceLibWPE::create(webPage, client);
-#endif
-    RELEASE_ASSERT_NOT_REACHED();
-    return nullptr;
+    return WebProcess::singleton().waylandCompositorDisplay() ? std::unique_ptr<AcceleratedSurfaceWayland>(new AcceleratedSurfaceWayland(webPage, client)) : nullptr;
 }
 
-AcceleratedSurface::AcceleratedSurface(WebPage& webPage, Client& client)
-    : m_webPage(webPage)
-    , m_client(client)
-    , m_size(webPage.size())
+AcceleratedSurfaceWayland::AcceleratedSurfaceWayland(WebPage& webPage, Client& client)
+    : AcceleratedSurface(webPage, client)
 {
-    m_size.scale(m_webPage.deviceScaleFactor());
 }
 
-bool AcceleratedSurface::hostResize(const IntSize& size)
+void AcceleratedSurfaceWayland::initialize()
 {
-    IntSize scaledSize(size);
-    scaledSize.scale(m_webPage.deviceScaleFactor());
-    if (scaledSize == m_size)
-        return false;
+    m_surface = WebProcess::singleton().waylandCompositorDisplay()->createSurface();
+    m_window = wl_egl_window_create(m_surface.get(), std::max(1, m_size.width()), std::max(1, m_size.height()));
+}
 
-    m_size = scaledSize;
-    return true;
+void AcceleratedSurfaceWayland::finalize()
+{
+    wl_egl_window_destroy(m_window);
+}
+
+void AcceleratedSurfaceWayland::clientResize(const IntSize& size)
+{
+    wl_egl_window_resize(m_window, m_size.width(), m_size.height(), 0, 0);
+}
+
+void AcceleratedSurfaceWayland::didRenderFrame()
+{
+    // FIXME: frameComplete() should be called when the frame was actually rendered in the screen.
+    m_client.frameComplete();
 }
 
 } // namespace WebKit
+
+#endif // PLATFORM(WAYLAND)

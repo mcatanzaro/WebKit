@@ -163,6 +163,10 @@
 #include <unistd.h>
 #endif
 
+#if PLATFORM(WAYLAND)
+#include "WaylandCompositorDisplay.h"
+#endif
+
 #if PLATFORM(COCOA)
 #include "ObjCObjectGraph.h"
 #include "UserMediaCaptureManager.h"
