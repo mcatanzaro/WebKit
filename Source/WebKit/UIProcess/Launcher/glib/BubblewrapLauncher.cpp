@@ -38,6 +38,10 @@
 
 #include "Syscalls.h"
 
+#if PLATFORM(GTK)
+#include "WaylandCompositor.h"
+#endif
+
 #if !defined(MFD_ALLOW_SEALING) && HAVE(LINUX_MEMFD_H)
 
 // These defines were added in glibc 2.27, the same release that added memfd_create.
@@ -244,7 +248,7 @@ static void bindX11(Vector<CString>& args)
 }
 #endif
 
-#if PLATFORM(WAYLAND)
+#if PLATFORM(WAYLAND) && USE(EGL)
 static void bindWayland(Vector<CString>& args)
 {
     const char* display = g_getenv("WAYLAND_DISPLAY");
@@ -254,6 +258,14 @@ static void bindWayland(Vector<CString>& args)
     const char* runtimeDir = g_get_user_runtime_dir();
     GUniquePtr<char> waylandRuntimeFile(g_build_filename(runtimeDir, display, nullptr));
     bindIfExists(args, waylandRuntimeFile.get(), BindFlags::ReadWrite);
+
+#if !USE(WPE_RENDERER)
+    if (WaylandCompositor::singleton().isRunning()) {
+        String displayName = WaylandCompositor::singleton().displayName();
+        waylandRuntimeFile.reset(g_build_filename(runtimeDir, displayName.utf8().data(), nullptr));
+        bindIfExists(args, waylandRuntimeFile.get(), BindFlags::ReadWrite);
+    }
+#endif
 }
 #endif
 
@@ -776,7 +788,7 @@ GRefPtr<GSubprocess> bubblewrapSpawn(GSubprocessLauncher* launcher, const Proces
     }
 
     if (launchOptions.processType == ProcessLauncher::ProcessType::Web) {
-#if PLATFORM(WAYLAND)
+#if PLATFORM(WAYLAND) && USE(EGL)
         if (PlatformDisplay::sharedDisplay().type() == PlatformDisplay::Type::Wayland) {
             bindWayland(sandboxArgs);
             sandboxArgs.append("--unshare-ipc");

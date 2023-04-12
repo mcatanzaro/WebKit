@@ -74,7 +74,7 @@
 #include <WebCore/PlatformDisplay.h>
 #endif
 
-#if PLATFORM(WAYLAND)
+#if PLATFORM(WAYLAND) && USE(WPE_RENDERER)
 #include <WebCore/PlatformDisplayLibWPE.h>
 #endif
 
@@ -718,7 +718,7 @@ private:
     std::unique_ptr<WaylandCompositorDisplay> m_waylandCompositorDisplay;
 #endif
 
-#if PLATFORM(WAYLAND)
+#if PLATFORM(WAYLAND) && USE(WPE_RENDERER)
     std::unique_ptr<WebCore::PlatformDisplayLibWPE> m_wpeDisplay;
 #endif
 

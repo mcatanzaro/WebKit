@@ -45,7 +45,7 @@
 #if PLATFORM(GTK)
 #include <gtk/gtk.h>
 
-#if PLATFORM(WAYLAND)
+#if PLATFORM(WAYLAND) && USE(WPE_RENDERER)
 #include <wpe/wpe.h>
 #include <wpe/fdo.h>
 #endif
@@ -228,7 +228,7 @@ void WebKitProtocolHandler::handleGPU(WebKitURISchemeRequest* request)
 #if PLATFORM(GTK)
     addTableRow(versionObject, "GTK version"_s, makeString(GTK_MAJOR_VERSION, '.', GTK_MINOR_VERSION, '.', GTK_MICRO_VERSION, " (build) "_s, gtk_get_major_version(), '.', gtk_get_minor_version(), '.', gtk_get_micro_version(), " (runtime)"_s));
 
-#if PLATFORM(WAYLAND)
+#if PLATFORM(WAYLAND) && USE(WPE_RENDERER)
     if (PlatformDisplay::sharedDisplay().type() == PlatformDisplay::Type::Wayland) {
         addTableRow(versionObject, "WPE version"_s, makeString(WPE_MAJOR_VERSION, '.', WPE_MINOR_VERSION, '.', WPE_MICRO_VERSION, " (build) "_s, wpe_get_major_version(), '.', wpe_get_minor_version(), '.', wpe_get_micro_version(), " (runtime)"_s));
 

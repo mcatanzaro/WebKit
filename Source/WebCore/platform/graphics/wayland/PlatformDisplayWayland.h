@@ -51,8 +51,6 @@ private:
 
     Type type() const final { return PlatformDisplay::Type::Wayland; }
 
-    void registryGlobal(const char* interface, uint32_t name);
-
 protected:
     explicit PlatformDisplayWayland(struct wl_display*);
 #if PLATFORM(GTK)
@@ -63,7 +61,8 @@ protected:
 
     void initialize();
 
-private:
+    virtual void registryGlobal(const char* interface, uint32_t name);
+
     struct wl_display* m_display;
     WlUniquePtr<struct wl_registry> m_registry;
     WlUniquePtr<struct wl_compositor> m_compositor;
