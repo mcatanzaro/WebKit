@@ -313,7 +313,8 @@ static WebKitPrintOperationResponse webkitPrintOperationRunDialog(WebKitPrintOpe
 #endif
 
     WebKitPrintOperationResponse returnValue = WEBKIT_PRINT_OPERATION_RESPONSE_CANCEL;
-    if (gtk_dialog_run(GTK_DIALOG(printDialog)) == GTK_RESPONSE_OK) {
+    int response = gtk_dialog_run(GTK_DIALOG(printDialog));
+    if (response == GTK_RESPONSE_OK) {
         priv->printSettings = adoptGRef(gtk_print_unix_dialog_get_settings(printDialog));
         priv->pageSetup = gtk_print_unix_dialog_get_page_setup(printDialog);
         priv->printer = gtk_print_unix_dialog_get_selected_printer(printDialog);
@@ -324,7 +325,12 @@ static WebKitPrintOperationResponse webkitPrintOperationRunDialog(WebKitPrintOpe
 #endif
     }
 
+#if USE(GTK4)
+    if (response != GTK_RESPONSE_DELETE_EVENT)
+        gtk_window_destroy(GTK_WINDOW(printDialog));
+#else
     gtk_widget_destroy(GTK_WIDGET(printDialog));
+#endif
 
     return returnValue;
 }
