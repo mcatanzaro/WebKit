@@ -781,12 +781,14 @@ void NetworkConnectionToWebProcess::registerURLSchemesAsCORSEnabled(Vector<Strin
 
 static bool shouldTreatAsSameSite(const URL& firstParty, const URL& url)
 {
-#if PLATFORM(COCOA) || USE(SOUP)
+#if HAVE(COOKIE_CHANGE_LISTENER_API)
     if (SecurityPolicy::shouldInheritSecurityOriginFromOwner(url))
         return true;
 
     return RegistrableDomain(firstParty) == RegistrableDomain(url);
 #else
+    // FIXME: This is a security bug. https://webkit.org/b/285968
+    notImplemented();
     return true;
 #endif
 }
