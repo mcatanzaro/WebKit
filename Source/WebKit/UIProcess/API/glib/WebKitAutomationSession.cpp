@@ -399,31 +399,27 @@ WebKitAutomationSession* webkitAutomationSessionCreate(WebKitWebContext* webCont
 #endif
         }
     }
+
     if (capabilities.proxy) {
+        WebKitNetworkProxySettings* proxySettings = nullptr;
+        WebKitNetworkProxyMode proxyMode;
         if (capabilities.proxy->type == "pac"_s) {
-            // FIXME: expose pac proxy in public API.
-            auto settings = WebCore::SoupNetworkProxySettings(WebCore::SoupNetworkProxySettings::Mode::Auto);
-            if (capabilities.proxy->autoconfigURL)
-                settings.defaultProxyURL = capabilities.proxy->autoconfigURL->utf8();
-            if (!settings.isEmpty()) {
+            if (capabilities.proxy->autoconfigURL) {
+                proxySettings = webkit_network_proxy_settings_new_for_proxy_autoconfig(capabilities.proxy->autoconfigURL->utf8().data());
+                proxyMode = WEBKIT_NETWORK_PROXY_MODE_CUSTOM;
+            } else
+                g_warning("Proxy autoconfig is enabled, but no proxy autoconfig URL was provided");
+        } else
+            proxyMode = parseProxyCapabilities(*capabilities.proxy, &proxySettings);
+
 #if ENABLE(2022_GLIB_API)
-                Ref dataStore = webkitWebsiteDataManagerGetDataStore(webkit_network_session_get_website_data_manager(networkSession));
+        webkit_network_session_set_proxy_settings(networkSession, proxyMode, proxySettings);
 #else
-                Ref dataStore = webkitWebsiteDataManagerGetDataStore(webkit_web_context_get_website_data_manager(webContext));
+        webkit_website_data_manager_set_network_proxy_settings(webkit_web_context_get_website_data_manager(webContext), proxyMode, proxySettings);
 #endif
-                dataStore->setNetworkProxySettings(WTFMove(settings));
-            }
-        } else {
-            WebKitNetworkProxySettings* proxySettings = nullptr;
-            auto proxyMode = parseProxyCapabilities(*capabilities.proxy, &proxySettings);
-#if ENABLE(2022_GLIB_API)
-            webkit_network_session_set_proxy_settings(networkSession, proxyMode, proxySettings);
-#else
-            webkit_website_data_manager_set_network_proxy_settings(webkit_web_context_get_website_data_manager(webContext), proxyMode, proxySettings);
-#endif
-            if (proxySettings)
-                webkit_network_proxy_settings_free(proxySettings);
-        }
+
+        if (proxySettings)
+            webkit_network_proxy_settings_free(proxySettings);
     }
     return session;
 }

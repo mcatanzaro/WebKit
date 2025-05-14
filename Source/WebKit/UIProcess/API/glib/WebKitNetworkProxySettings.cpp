@@ -22,6 +22,7 @@
 
 #include "WebKitNetworkProxySettingsPrivate.h"
 #include <WebCore/SoupNetworkProxySettings.h>
+#include <WebCore/WebKitAutoconfigProxyResolver.h>
 #include <wtf/URL.h>
 #include <wtf/glib/WTFGType.h>
 #include <wtf/text/WTFString.h>
@@ -29,8 +30,8 @@
 using namespace WebCore;
 
 struct _WebKitNetworkProxySettings {
-    _WebKitNetworkProxySettings()
-        : settings(SoupNetworkProxySettings::Mode::Custom)
+    explicit _WebKitNetworkProxySettings(SoupNetworkProxySettings::Mode mode)
+        : settings(mode)
     {
     }
 
@@ -94,13 +95,39 @@ const SoupNetworkProxySettings& webkitNetworkProxySettingsGetNetworkProxySetting
 WebKitNetworkProxySettings* webkit_network_proxy_settings_new(const char* defaultProxyURI, const char* const* ignoreHosts)
 {
     WebKitNetworkProxySettings* proxySettings = static_cast<WebKitNetworkProxySettings*>(fastMalloc(sizeof(WebKitNetworkProxySettings)));
-    new (proxySettings) WebKitNetworkProxySettings;
+    new (proxySettings) WebKitNetworkProxySettings(SoupNetworkProxySettings::Mode::Custom);
     if (defaultProxyURI) {
         g_return_val_if_fail(URL(String::fromUTF8(defaultProxyURI)).isValid(), nullptr);
         proxySettings->settings.defaultProxyURL = defaultProxyURI;
     }
     if (ignoreHosts)
         proxySettings->settings.ignoreHosts.reset(g_strdupv(const_cast<char**>(ignoreHosts)));
+    return proxySettings;
+}
+
+/**
+ * webkit_network_proxy_settings_new_for_proxy_autoconfig:
+ * @pac_url: URL of the web proxy autoconfig file to use
+ *
+ * Create a new #WebKitNetworkProxySettings with the given @pac_url, for use with proxy autoconfig.
+ *
+ * Use webkit_network_proxy_settings_get_is_proxy_autoconfig_supported() to test whether proxy
+ * autoconfig is available. If not supported, this function will return %NULL.
+ *
+ * Returns: (nullable) (transfer full): A new #WebKitNetworkProxySettings.
+ *
+ * Since: 2.50
+ */
+WebKitNetworkProxySettings* webkit_network_proxy_settings_new_for_proxy_autoconfig(const char* pacURL)
+{
+    g_return_val_if_fail(URL(String::fromUTF8(pacURL)).isValid(), nullptr);
+
+    if (!webkit_network_proxy_settings_get_is_proxy_autoconfig_supported())
+        return nullptr;
+
+    WebKitNetworkProxySettings* proxySettings = static_cast<WebKitNetworkProxySettings*>(fastMalloc(sizeof(WebKitNetworkProxySettings)));
+    new (proxySettings) WebKitNetworkProxySettings(SoupNetworkProxySettings::Mode::Auto);
+    proxySettings->settings.defaultProxyURL = pacURL;
     return proxySettings;
 }
 
@@ -161,4 +188,28 @@ void webkit_network_proxy_settings_add_proxy_for_scheme(WebKitNetworkProxySettin
     g_return_if_fail(URL(String::fromUTF8(proxyURI)).isValid());
 
     proxySettings->settings.proxyMap.add(scheme, proxyURI);
+}
+
+/**
+ * webkit_network_proxy_settings_get_is_proxy_autoconfig_supported:
+ *
+ * Proxy autoconfig depends on appropriate host system support. Currently, this requires the
+ * org.gtk.GLib.PACRunner D-Bus API provided by glib-networking, but this may change in the future.
+ * Use this function to test whether proxy autoconfig is available.
+ *
+ * Returns: %TRUE if proxy autoconfig is supported
+ *
+ * Since: 2.50
+ */
+gboolean webkit_network_proxy_settings_get_is_proxy_autoconfig_supported()
+{
+    // This requires a sync D-Bus call, so do it only once.
+    static std::optional<gboolean> supported;
+    if (supported.has_value())
+        return *supported;
+
+    CString emptyString;
+    GRefPtr<GProxyResolver> testForAutoconfigSupportResolver(webkitAutoconfigProxyResolverNew(emptyString));
+    supported = !!testForAutoconfigSupportResolver;
+    return *supported;
 }

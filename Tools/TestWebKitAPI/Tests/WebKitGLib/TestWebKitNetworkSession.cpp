@@ -28,6 +28,7 @@
 #include <wtf/glib/GUniquePtr.h>
 
 static WebKitTestServer* kServer;
+static WebKitTestServer* kProxyServer;
 
 static void testNetworkSessionDefault(Test* test, gconstpointer)
 {
@@ -92,6 +93,16 @@ static void serverCallback(SoupServer* server, SoupServerMessage* message, const
         soup_message_body_append(responseBody, SOUP_MEMORY_TAKE, port, strlen(port));
         soup_message_body_complete(responseBody);
         soup_server_message_set_status(message, SOUP_STATUS_OK, nullptr);
+    } else if (g_str_equal(path, "/pac")) {
+        char* response = g_strdup_printf("function FindProxyForURL(url, host) { return 'PROXY %s;';}", kProxyServer->baseURL().hostAndPort().utf8().data());
+        soup_message_body_append(responseBody, SOUP_MEMORY_TAKE, response, strlen(response));
+        soup_message_body_complete(responseBody);
+        soup_server_message_set_status(message, SOUP_STATUS_OK, nullptr);
+    } else if (g_str_equal(path, "/broken-pac")) {
+        const char* response = "You win again, gravity!";
+        soup_message_body_append(responseBody, SOUP_MEMORY_STATIC, response, strlen(response));
+        soup_message_body_complete(responseBody);
+        soup_server_message_set_status(message, SOUP_STATUS_OK, nullptr);
     } else
         soup_server_message_set_status(message, SOUP_STATUS_NOT_FOUND, nullptr);
 }
@@ -123,6 +134,13 @@ public:
 
         m_proxyServer.addWebSocketHandler(webSocketProxyServerCallback, this);
         g_assert_false(m_proxyServer.baseWebSocketURL().isNull());
+
+        kProxyServer = &m_proxyServer;
+    }
+
+    ~ProxyTest()
+    {
+        kProxyServer = nullptr;
     }
 
     CString loadURIAndGetMainResourceData(const char* uri)
@@ -262,6 +280,50 @@ static void testNetworkSessionProxySettings(ProxyTest* test, gconstpointer)
     kServer->removeWebSocketHandler();
 }
 
+static void testNetworkSessionProxyAutoconfig(ProxyTest* test, gconstpointer)
+{
+    // Proxy URI is unset by default. Requests to kServer should be received by kServer.
+    GUniquePtr<char> serverPortAsString(g_strdup_printf("%u", kServer->port()));
+    auto mainResourceData = test->loadURIAndGetMainResourceData(kServer->getURIForPath("/echoPort").data());
+    ASSERT_CMP_CSTRING(mainResourceData, ==, serverPortAsString.get());
+
+    // Use web proxy autoconfig. The test server's proxy autoconfig file directs
+    // the client to the proxy server address.
+    WebKitNetworkProxySettings* settings = webkit_network_proxy_settings_new_for_proxy_autoconfig(kServer->getURIForPath("/pac").data());
+    if (!settings) {
+        g_assert_false(webkit_network_proxy_settings_get_is_proxy_autoconfig_supported());
+        g_test_skip("Operating system does not support proxy autoconfig (you need to install glib-networking)");
+        return;
+    }
+    g_assert_true(webkit_network_proxy_settings_get_is_proxy_autoconfig_supported());
+
+    webkit_network_session_set_proxy_settings(test->m_networkSession.get(), WEBKIT_NETWORK_PROXY_MODE_CUSTOM, settings);
+    mainResourceData = test->loadURIAndGetMainResourceData(kServer->getURIForPath("/echoPort").data());
+    GUniquePtr<char> proxyServerPortAsString = test->proxyServerPortAsString();
+    ASSERT_CMP_CSTRING(mainResourceData, ==, proxyServerPortAsString.get());
+    webkit_network_proxy_settings_free(settings);
+
+    // Use a broken proxy autoconfig file. We should fall back to the non-proxy server.
+    settings = webkit_network_proxy_settings_new_for_proxy_autoconfig(kServer->getURIForPath("/broken-pac").data());
+    webkit_network_session_set_proxy_settings(test->m_networkSession.get(), WEBKIT_NETWORK_PROXY_MODE_CUSTOM, settings);
+    mainResourceData = test->loadURIAndGetMainResourceData(kServer->getURIForPath("/echoPort").data());
+    ASSERT_CMP_CSTRING(mainResourceData, ==, serverPortAsString.get());
+    webkit_network_proxy_settings_free(settings);
+
+    // Use a bogus URL which won't respond at all. We should fall back to the non-proxy server.
+    // (If some service is actually listening on port 9, it's probably Discard Protocol.)
+    settings = webkit_network_proxy_settings_new_for_proxy_autoconfig("http://127.0.0.1:9");
+    webkit_network_session_set_proxy_settings(test->m_networkSession.get(), WEBKIT_NETWORK_PROXY_MODE_CUSTOM, settings);
+    mainResourceData = test->loadURIAndGetMainResourceData(kServer->getURIForPath("/echoPort").data());
+    ASSERT_CMP_CSTRING(mainResourceData, ==, serverPortAsString.get());
+    webkit_network_proxy_settings_free(settings);
+
+    // Reset to use the default resolver.
+    webkit_network_session_set_proxy_settings(test->m_networkSession.get(), WEBKIT_NETWORK_PROXY_MODE_DEFAULT, nullptr);
+    mainResourceData = test->loadURIAndGetMainResourceData(kServer->getURIForPath("/echoPort").data());
+    ASSERT_CMP_CSTRING(mainResourceData, ==, serverPortAsString.get());
+}
+
 void beforeAll()
 {
     kServer = new WebKitTestServer();
@@ -270,6 +332,7 @@ void beforeAll()
     Test::add("WebKitNetworkSession", "default-session", testNetworkSessionDefault);
     Test::add("WebKitNetworkSession", "ephemeral", testNetworkSessionEphemeral);
     ProxyTest::add("WebKitNetworkSession", "proxy", testNetworkSessionProxySettings);
+    ProxyTest::add("WebKitNetworkSession", "proxy-autoconfig", testNetworkSessionProxyAutoconfig);
 }
 
 void afterAll()

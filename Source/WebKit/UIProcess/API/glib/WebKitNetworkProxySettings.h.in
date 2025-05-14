@@ -55,6 +55,10 @@ webkit_network_proxy_settings_new                  (const gchar                *
                                                     const gchar* const         *ignore_hosts);
 
 WEBKIT_API WebKitNetworkProxySettings *
+webkit_network_proxy_settings_new_for_proxy_autoconfig
+                                                   (const gchar                *pac_url);
+
+WEBKIT_API WebKitNetworkProxySettings *
 webkit_network_proxy_settings_copy                 (WebKitNetworkProxySettings *proxy_settings);
 
 WEBKIT_API void
@@ -64,6 +68,10 @@ WEBKIT_API void
 webkit_network_proxy_settings_add_proxy_for_scheme (WebKitNetworkProxySettings *proxy_settings,
                                                     const gchar                *scheme,
                                                     const gchar                *proxy_uri);
+
+WEBKIT_API gboolean
+webkit_network_proxy_settings_get_is_proxy_autoconfig_supported
+                                                   (void);
 
 G_END_DECLS
 
@@ -78,6 +86,9 @@ G_END_DECLS
  * to a #WebKitNetworkSession. You need to call webkit_network_session_set_network_proxy_settings()
  * with %WEBKIT_NETWORK_PROXY_MODE_CUSTOM and a WebKitNetworkProxySettings.
  *
+ * Since 2.50, you may use webkit_network_proxy_settings_new_for_proxy_autoconfig()
+ * to specify a custom proxy autoconfig file. You still need to use %WEBKIT_NETWORK_PROXY_MODE_CUSTOM.
+ *
  * Since: 2.16
  */
 #else
@@ -90,6 +101,9 @@ G_END_DECLS
  * WebKitNetworkProxySettings can be used to provide a custom proxy configuration
  * to a #WebKitWebsiteDataManager. You need to call webkit_website_data_manager_set_network_proxy_settings()
  * with %WEBKIT_NETWORK_PROXY_MODE_CUSTOM and a WebKitNetworkProxySettings.
+ *
+ * Since 2.50, you may use webkit_network_proxy_settings_new_for_proxy_autoconfig()
+ * to specify a custom proxy autoconfig file. You still need to use %WEBKIT_NETWORK_PROXY_MODE_CUSTOM.
  *
  * Since: 2.16
  */
