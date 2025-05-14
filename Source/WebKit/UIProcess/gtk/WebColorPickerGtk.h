@@ -27,6 +27,8 @@
 
 #include "WebColorPicker.h"
 #include <gdk/gdk.h>
+#include <gtk/gtk.h>
+#include <wtf/glib/GRefPtr.h>
 
 typedef struct _GtkColorChooser GtkColorChooser;
 
@@ -58,10 +60,19 @@ protected:
     GtkWidget* m_webView;
 
 private:
+#if GTK_CHECK_VERSION(4, 10, 0)
+    static void colorDialogChooseCallback(GtkColorDialog*, GAsyncResult*, WebColorPickerGtk*);
+#else
     static void colorChooserDialogRGBAChangedCallback(GtkColorChooser*, GParamSpec*, WebColorPickerGtk*);
     static void colorChooserDialogResponseCallback(GtkColorChooser*, int /*responseID*/, WebColorPickerGtk*);
+#endif
 
+#if GTK_CHECK_VERSION(4, 10, 0)
+    GRefPtr<GtkColorDialog> m_colorDialog;
+    GRefPtr<GCancellable> m_cancellable;
+#else
     GtkWidget* m_colorChooser;
+#endif
 };
 
 } // namespace WebKit

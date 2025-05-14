@@ -28,6 +28,7 @@
 
 #include "WebPageProxy.h"
 #include <WebCore/Color.h>
+#include <WebCore/GUniquePtrGtk.h>
 #include <WebCore/GtkUtilities.h>
 #include <WebCore/GtkVersioning.h>
 #include <glib/gi18n-lib.h>
@@ -44,12 +45,21 @@ WebColorPickerGtk::WebColorPickerGtk(WebPageProxy& page, const Color& initialCol
     : WebColorPicker(&page.colorPickerClient())
     , m_initialColor(initialColor)
     , m_webView(page.viewWidget())
+#if GTK_CHECK_VERSION(4, 10, 0)
+    , m_colorDialog(adoptGRef(gtk_color_dialog_new()))
+    , m_cancellable(adoptGRef(g_cancellable_new()))
+#else
     , m_colorChooser(nullptr)
+#endif
 {
 }
 
 WebColorPickerGtk::~WebColorPickerGtk()
 {
+#if GTK_CHECK_VERSION(4, 10, 0)
+    g_cancellable_cancel(m_cancellable.get());
+#endif
+
     endPicker();
 }
 
@@ -60,7 +70,9 @@ void WebColorPickerGtk::cancel()
 
 void WebColorPickerGtk::endPicker()
 {
+#if !GTK_CHECK_VERSION(4, 10, 0)
     g_clear_pointer(&m_colorChooser, gtk_widget_destroy);
+#endif
 
     WebColorPicker::endPicker();
 }
@@ -71,6 +83,20 @@ void WebColorPickerGtk::didChooseColor(const Color& color)
         client->didChooseColor(color);
 }
 
+#if GTK_CHECK_VERSION(4, 10, 0)
+void WebColorPickerGtk::colorDialogChooseCallback(GtkColorDialog* colorDialog, GAsyncResult* result, WebColorPickerGtk* colorPicker)
+{
+    GUniqueOutPtr<GError> error;
+    GUniquePtr<GdkRGBA> rgba(gtk_color_dialog_choose_rgba_finish(colorDialog, result, &error.outPtr()));
+    if (error) {
+        if (!g_error_matches(error.get(), GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_CANCELLED) && !g_error_matches(error.get(), GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+            g_warning("Failed to run color dialog: %s", error->message);
+        colorPicker->cancel();
+    } else
+        colorPicker->didChooseColor(*rgba.get());
+    colorPicker->endPicker();
+}
+#else
 void WebColorPickerGtk::colorChooserDialogRGBAChangedCallback(GtkColorChooser* colorChooser, GParamSpec*, WebColorPickerGtk* colorPicker)
 {
     GdkRGBA rgba;
@@ -84,6 +110,7 @@ void WebColorPickerGtk::colorChooserDialogResponseCallback(GtkColorChooser*, int
         colorPicker->cancel();
     colorPicker->endPicker();
 }
+#endif
 
 void WebColorPickerGtk::showColorPicker(const Color& color)
 {
@@ -92,6 +119,10 @@ void WebColorPickerGtk::showColorPicker(const Color& color)
 
     m_initialColor = color;
 
+#if GTK_CHECK_VERSION(4, 10, 0)
+    GtkWidget* toplevel = gtk_widget_get_toplevel(m_webView);
+    gtk_color_dialog_choose_rgba(m_colorDialog.get(), toplevel ? GTK_WINDOW(toplevel) : nullptr, &m_initialColor, m_cancellable.get(), reinterpret_cast<GAsyncReadyCallback>(WebColorPickerGtk::colorDialogChooseCallback), this);
+#else
     if (!m_colorChooser) {
         GtkWidget* toplevel = gtk_widget_get_toplevel(m_webView);
         m_colorChooser = gtk_color_chooser_dialog_new(_("Select Color"), WebCore::widgetIsOnscreenToplevelWindow(toplevel) ? GTK_WINDOW(toplevel) : nullptr);
@@ -102,6 +133,7 @@ void WebColorPickerGtk::showColorPicker(const Color& color)
         gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(m_colorChooser), &m_initialColor);
 
     gtk_widget_show(m_colorChooser);
+#endif
 }
 
 } // namespace WebKit

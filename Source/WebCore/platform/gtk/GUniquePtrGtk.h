@@ -20,6 +20,7 @@
 #ifndef GUniquePtrGtk_h
 #define GUniquePtrGtk_h
 
+#include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <wtf/glib/GUniquePtr.h>
 
@@ -28,6 +29,8 @@ namespace WTF {
 #if !USE(GTK4)
 WTF_DEFINE_GPTR_DELETER(GdkEvent, gdk_event_free)
 #endif
+
+WTF_DEFINE_GPTR_DELETER(GdkRGBA, gdk_rgba_free)
 
 WTF_DEFINE_GPTR_DELETER(GtkTreePath, gtk_tree_path_free)
 
