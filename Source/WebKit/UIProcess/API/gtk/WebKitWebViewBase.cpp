@@ -653,11 +653,13 @@ static void webkitWebViewBaseRealize(GtkWidget* widget)
     gint attributesMask = GDK_WA_X | GDK_WA_Y | GDK_WA_VISUAL;
 
     GdkWindow* window = gdk_window_new(gtk_widget_get_parent_window(widget), &attributes, attributesMask);
-    gtk_widget_set_window(widget, window);
-    gdk_window_set_user_data(window, widget);
+    if (window) {
+        gtk_widget_set_window(widget, window);
+        gdk_window_set_user_data(window, widget);
 
-    auto* monitor = gdk_display_get_monitor_at_window(gtk_widget_get_display(widget), window);
-    webkitWebViewBaseUpdateDisplayID(webView, monitor);
+        auto* monitor = gdk_display_get_monitor_at_window(gtk_widget_get_display(widget), window);
+        webkitWebViewBaseUpdateDisplayID(webView, monitor);
+    }
 #endif
 
     auto* imContext = priv->inputMethodFilter.context();
