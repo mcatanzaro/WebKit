@@ -372,7 +372,9 @@ WTF_DEFINE_GREF_TRAITS_INLINE(GMainLoop, g_main_loop_ref, g_main_loop_unref)
 WTF_DEFINE_GREF_TRAITS_INLINE(GMappedFile, g_mapped_file_ref, g_mapped_file_unref)
 WTF_DEFINE_GREF_TRAITS_INLINE(GPtrArray, g_ptr_array_ref, g_ptr_array_unref)
 WTF_DEFINE_GREF_TRAITS_INLINE(GSource, g_source_ref, g_source_unref)
+#if HAVE(GURI)
 WTF_DEFINE_GREF_TRAITS_INLINE(GUri, g_uri_ref, g_uri_unref)
+#endif
 WTF_DEFINE_GREF_TRAITS_INLINE(GVariantBuilder, g_variant_builder_ref, g_variant_builder_unref)
 WTF_DEFINE_GREF_TRAITS_INLINE(GVariant, g_variant_ref_sink, g_variant_unref, g_variant_is_floating)
 

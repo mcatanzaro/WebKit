@@ -27,7 +27,7 @@
 
 #include <wtf/text/WTFString.h>
 
-#if USE(GLIB)
+#if USE(GLIB) && HAVE(GURI)
 #include <wtf/glib/GRefPtr.h>
 #endif
 
@@ -240,7 +240,7 @@ public:
     WTF_EXPORT_PRIVATE static NSURL *emptyNSURL();
 #endif
 
-#if USE(GLIB)
+#if USE(GLIB) && HAVE(GURI)
     WTF_EXPORT_PRIVATE URL(GUri*);
     WTF_EXPORT_PRIVATE GRefPtr<GUri> createGUri() const;
 #endif

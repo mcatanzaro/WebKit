@@ -10,8 +10,7 @@ set(USER_AGENT_BRANDING "" CACHE STRING "Branding to add to user agent string")
 set(ENABLE_UNSAFE_BUFFER_USAGE_WARNING ON)
 list(APPEND WEBKIT_UNSAFE_BUFFER_WARNING_FLAGS -Wno-unsafe-buffer-usage-in-format-attr-call)
 
-# Update Source/WTF/wtf/Platform.h to match required GLib versions.
-find_package(GLib 2.70.0 REQUIRED COMPONENTS GioUnix Thread Module)
+find_package(GLib 2.56.4 REQUIRED COMPONENTS GioUnix Thread Module)
 find_package(Cairo 1.16.0 REQUIRED)
 find_package(LibGcrypt 1.7.0 REQUIRED)
 find_package(Soup3 3.0.0 REQUIRED)
@@ -262,6 +261,11 @@ SET_AND_EXPOSE_TO_BUILD(HAVE_GTK_UNIX_PRINTING ${GTK_UNIX_PRINT_FOUND})
 if (ENABLED_COMPILER_SANITIZERS)
     set(ENABLE_INTROSPECTION OFF)
     set(ENABLE_DOCUMENTATION OFF)
+endif ()
+
+# GUri is available in GLib since version 2.66, but we only want to use it if version is >= 2.67.1.
+if (PC_GLIB_VERSION VERSION_GREATER "2.67.1" OR PC_GLIB_VERSION STREQUAL "2.67.1")
+    SET_AND_EXPOSE_TO_BUILD(HAVE_GURI 1)
 endif ()
 
 if (ENABLE_GAMEPAD)

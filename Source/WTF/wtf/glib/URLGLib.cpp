@@ -35,6 +35,7 @@
 
 namespace WTF {
 
+#if HAVE(GURI)
 URL::URL(GUri* uri)
 {
     if (!uri) {
@@ -56,6 +57,7 @@ GRefPtr<GUri> URL::createGUri() const
         static_cast<GUriFlags>(G_URI_FLAGS_HAS_PASSWORD | G_URI_FLAGS_ENCODED_PATH | G_URI_FLAGS_ENCODED_QUERY | G_URI_FLAGS_ENCODED_FRAGMENT | G_URI_FLAGS_SCHEME_NORMALIZE | G_URI_FLAGS_PARSE_RELAXED),
         nullptr));
 }
+#endif
 
 bool URL::hostIsIPAddress(StringView host)
 {
