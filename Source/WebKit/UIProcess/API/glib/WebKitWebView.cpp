@@ -4436,6 +4436,8 @@ static Vector<std::pair<String, JavaScriptEvaluationResult>> parseAsyncFunctionA
         auto parameter = JavaScriptEvaluationResult::extract(value);
         if (!parameter) {
             *error = g_error_new(WEBKIT_JAVASCRIPT_ERROR, WEBKIT_JAVASCRIPT_ERROR_INVALID_PARAMETER, "Invalid parameter %s passed as argument of async function call", key);
+            // Normally g_variant_iter_loop() frees this for us, but not if we break out of the loop and never call it again.
+            g_variant_unref(value);
             return argumentsVector;
         }
         argumentsVector.append({ String::fromUTF8(key), WTFMove(*parameter) });

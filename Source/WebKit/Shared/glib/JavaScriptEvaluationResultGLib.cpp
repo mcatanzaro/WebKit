@@ -121,8 +121,12 @@ static bool isSerializable(GVariant* variant)
         const char* key;
         GVariant* value;
         while (g_variant_iter_loop(&iter, "{&sv}", &key, &value)) {
-            if (!key || !isSerializable(value))
+            if (!key || !isSerializable(value)) {
+                // Normally g_variant_iter_loop() frees this for us, but not if
+                // we break out of the loop and never call it again.
+                g_variant_unref(value);
                 return false;
+            }
         }
         return true;
     }
