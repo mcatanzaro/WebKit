@@ -143,7 +143,6 @@ public:
 
 #if USE(SKIA)
     void prepareForCrossThreadTransfer();
-    void finalizeCrossThreadTransfer();
 #endif
 
     size_t memoryCost() const;
