@@ -2027,6 +2027,9 @@ void WebPage::close()
     if (RefPtr localFrame = m_mainFrame->coreLocalFrame())
         localFrame->loader().detachFromParent();
 
+    if (RefPtr provisionalFrame = m_mainFrame->provisionalFrame())
+        provisionalFrame->loader().detachFromParent();
+
 #if ENABLE(SCROLLING_THREAD)
     if (m_useAsyncScrolling)
         protectedDrawingArea()->unregisterScrollingTree();
