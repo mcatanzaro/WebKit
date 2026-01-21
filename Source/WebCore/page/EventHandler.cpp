@@ -4315,9 +4315,16 @@ bool EventHandler::internalKeyEvent(const PlatformKeyboardEvent& initialKeyEvent
     keyPressEvent.disambiguateKeyDownEvent(PlatformEvent::Type::Char, backwardCompatibilityMode);
     if (keyPressEvent.text().isEmpty())
         return keydownResult;
+
+    // webkit.org/b/305666: Emojis appear as Chinese characters in Google Docs
+    auto shouldAvoidDispatchingKeyPressEvent = [&] {
+        auto text = keyPressEvent.text();
+        return !text.isEmpty() && !U_IS_BMP(text.characterStartingAt(0));
+    };
+
     auto keypress = KeyboardEvent::create(keyPressEvent, &frame->windowProxy());
     keypress->setTarget(element.copyRef());
-    if (keypress->isComposing()) {
+    if (keypress->isComposing() || shouldAvoidDispatchingKeyPressEvent()) {
         frame->editor().handleKeyboardEvent(keypress);
         return keydownResult;
     }
