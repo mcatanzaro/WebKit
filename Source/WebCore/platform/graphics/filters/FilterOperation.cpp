@@ -411,9 +411,11 @@ bool DropShadowFilterOperation::operator==(const FilterOperation& operation) con
 
 RefPtr<FilterOperation> DropShadowFilterOperation::blend(const FilterOperation* from, const BlendingContext& context, bool blendToPassthrough)
 {
+#if PLATFORM(COCOA)
     // This should only be called in the context of remote layer tree animations. In other situations,
     // such as within the Web process, only DropShadowFilterOperationWithStyleColor should get blended.
     ASSERT(!isInAuxiliaryProcess());
+#endif
 
     // We should only ever be blending with null or similar operations.
     ASSERT(!from || from->isSameType(*this));
