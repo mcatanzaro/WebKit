@@ -836,6 +836,7 @@ static Ref<API::PageConfiguration> webkitWebViewCreatePageConfiguration(WebKitWe
     pageConfiguration->setProcessPool(&webkitWebContextGetProcessPool(priv->context.get()));
     pageConfiguration->setPreferences(webkitSettingsGetPreferences(priv->settings.get()));
     pageConfiguration->preferences().setAllowTestOnlyIPC(pageConfiguration->allowTestOnlyIPC());
+    pageConfiguration->preferences().setUsesSingleWebProcess(pageConfiguration->processPool().usesSingleWebProcess());
     pageConfiguration->setRelatedPage(priv->relatedView ? &webkitWebViewGetPage(priv->relatedView) : nullptr);
     pageConfiguration->setUserContentController(priv->userContentManager ? webkitUserContentManagerGetUserContentControllerProxy(priv->userContentManager.get()) : nullptr);
     pageConfiguration->setControlledByAutomation(priv->isControlledByAutomation);
