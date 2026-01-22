@@ -530,8 +530,8 @@ void NetworkConnectionToWebProcess::createSocketChannel(const ResourceRequest& r
     MESSAGE_CHECK(m_networkProcess->allowsFirstPartyForCookies(m_webProcessIdentifier, request.firstPartyForCookies()) != NetworkProcess::AllowCookieAccess::Terminate);
 
     ASSERT(!m_networkSocketChannels.contains(identifier));
-    if (RefPtr channel = NetworkSocketChannel::create(*this, m_sessionID, request, protocol, identifier, webPageProxyID, frameID, pageID, clientOrigin, hadMainFrameMainResourcePrivateRelayed, allowPrivacyProxy, advancedPrivacyProtections, storedCredentialsPolicy))
-        m_networkSocketChannels.add(identifier, channel.releaseNonNull());
+    if (auto channel = NetworkSocketChannel::create(*this, m_sessionID, request, protocol, identifier, webPageProxyID, frameID, pageID, clientOrigin, hadMainFrameMainResourcePrivateRelayed, allowPrivacyProxy, advancedPrivacyProtections, storedCredentialsPolicy))
+        m_networkSocketChannels.add(identifier, WTF::move(channel));
 }
 
 void NetworkConnectionToWebProcess::removeSocketChannel(WebSocketIdentifier identifier)

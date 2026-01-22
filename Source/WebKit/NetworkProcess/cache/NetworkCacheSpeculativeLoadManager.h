@@ -91,7 +91,7 @@ private:
     ThreadSafeWeakRef<Storage> m_storage;
 
     class PendingFrameLoad;
-    HashMap<GlobalFrameID, Ref<PendingFrameLoad>> m_pendingFrameLoads;
+    HashMap<GlobalFrameID, RefPtr<PendingFrameLoad>> m_pendingFrameLoads;
 
     HashMap<Key, RefPtr<SpeculativeLoad>> m_pendingPreloads;
     HashMap<Key, std::unique_ptr<Vector<RetrieveCompletionHandler>>> m_pendingRetrieveRequests;

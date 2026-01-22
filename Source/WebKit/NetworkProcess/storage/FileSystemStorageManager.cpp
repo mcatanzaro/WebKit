@@ -107,7 +107,7 @@ Expected<WebCore::FileSystemHandleIdentifier, FileSystemStorageError> FileSystem
     }).iterator->value.add(newHandleIdentifier);
     if (RefPtr registry = m_registry.get())
         registry->registerHandle(newHandleIdentifier, *newHandle);
-    m_handles.add(newHandleIdentifier, newHandle.releaseNonNull());
+    m_handles.add(newHandleIdentifier, WTF::move(newHandle));
     return newHandleIdentifier;
 }
 

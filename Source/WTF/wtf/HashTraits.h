@@ -348,15 +348,6 @@ struct PairHashTraits : GenericHashTraits<std::pair<typename FirstTraitsArg::Tra
 
     static constexpr bool emptyValueIsZero = FirstTraits::emptyValueIsZero && SecondTraits::emptyValueIsZero;
     static EmptyValueType emptyValue() { return std::make_pair(FirstTraits::emptyValue(), SecondTraits::emptyValue()); }
-
-    // Override constructEmptyValue to construct elements individually, avoiding move-construction from emptyValue().
-    template <typename Traits>
-    static void constructEmptyValue(TraitType& slot)
-    {
-        FirstTraits::template constructEmptyValue<FirstTraits>(*std::launder(&slot.first));
-        SecondTraits::template constructEmptyValue<SecondTraits>(*std::launder(&slot.second));
-    }
-
     static bool isEmptyValue(const TraitType& value) { return isHashTraitsEmptyValue<FirstTraits>(value.first) && isHashTraitsEmptyValue<SecondTraits>(value.second); }
 
     static constexpr unsigned minimumTableSize = FirstTraits::minimumTableSize;

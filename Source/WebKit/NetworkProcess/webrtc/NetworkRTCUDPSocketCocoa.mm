@@ -99,7 +99,7 @@ private:
     RetainPtr<nw_listener_t> m_nwListener;
     Lock m_nwConnectionsLock;
     bool m_isClosed WTF_GUARDED_BY_LOCK(m_nwConnectionsLock) { false };
-    HashMap<webrtc::SocketAddress, std::pair<RetainPtr<nw_connection_t>, Ref<ConnectionStateTracker>>> m_nwConnections WTF_GUARDED_BY_LOCK(m_nwConnectionsLock);
+    HashMap<webrtc::SocketAddress, std::pair<RetainPtr<nw_connection_t>, RefPtr<ConnectionStateTracker>>> m_nwConnections WTF_GUARDED_BY_LOCK(m_nwConnectionsLock);
     std::optional<uint32_t> m_trafficClass;
 };
 
@@ -270,7 +270,7 @@ NetworkRTCUDPSocketCocoaConnections::NetworkRTCUDPSocketCocoaConnections(WebCore
         auto remoteAddress = socketAddressFromIncomingConnection(nwConnection);
         ASSERT(remoteAddress != HashTraits<webrtc::SocketAddress>::emptyValue() && !HashTraits<webrtc::SocketAddress>::isDeletedValue(remoteAddress));
 
-        Ref connectionStateTracker = ConnectionStateTracker::create();
+        auto connectionStateTracker = ConnectionStateTracker::create();
         protectedThis->setupNWConnection(nwConnection, connectionStateTracker.get(), remoteAddress);
         if (protectedThis->m_trafficClass)
             nw_connection_reset_traffic_class(nwConnection, *protectedThis->m_trafficClass);
