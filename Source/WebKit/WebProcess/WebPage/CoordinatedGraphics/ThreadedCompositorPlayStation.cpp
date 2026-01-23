@@ -278,7 +278,7 @@ void ThreadedCompositor::paintToCurrentGLContext(const TransformationMatrix& mat
         m_textureMapper->beginClip(TransformationMatrix(), *rectContainingRegionThatActuallyChanged);
 #endif
 
-    m_surface->clear();
+    m_surface->clear({ });
 
     WTFBeginSignpost(this, PaintTextureMapperLayerTree);
     currentRootLayer.paint(*m_textureMapper);

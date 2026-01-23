@@ -28,6 +28,9 @@
 #if USE(COORDINATED_GRAPHICS)
 
 #include "MessageReceiver.h"
+#include <WebCore/ColorComponents.h>
+#include <WebCore/ColorModels.h>
+#include <WebCore/CoordinatedCompositionReason.h>
 #include <WebCore/Damage.h>
 #include <WebCore/IntSize.h>
 #include <wtf/RunLoop.h>
@@ -92,12 +95,13 @@ public:
     static Ref<AcceleratedSurface> create(WebPage&, Function<void()>&& frameCompleteHandler);
     ~AcceleratedSurface();
 
+    using ColorComponents = WebCore::ColorComponents<float, 4>;
+
 #if PLATFORM(GTK) || ENABLE(WPE_PLATFORM)
     void ref() const final { ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr::ref(); }
     void deref() const final { ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr::deref(); }
 #endif
 
-public:
     uint64_t window() const;
     uint64_t surfaceID() const;
     bool shouldPaintMirrored() const
@@ -114,7 +118,7 @@ public:
     void willDestroyGLContext();
     void willRenderFrame(const WebCore::IntSize&);
     void didRenderFrame();
-    void clear();
+    void clear(const OptionSet<WebCore::CompositionReason>&);
 
 #if ENABLE(DAMAGE_TRACKING)
     void setFrameDamage(WebCore::Damage&&);
@@ -130,7 +134,7 @@ public:
 #endif
 
     void visibilityDidChange(bool);
-    bool backgroundColorDidChange();
+    void backgroundColorDidChange();
 
 private:
     AcceleratedSurface(WebPage&, Function<void()>&& frameCompleteHandler);
@@ -376,6 +380,8 @@ private:
 #endif
     };
 
+    static constexpr ColorComponents white { 1.f, 1.f, 1.f, WebCore::AlphaTraits<float>::opaque };
+
     WeakRef<WebPage> m_webPage;
     Function<void()> m_frameCompleteHandler;
     uint64_t m_id { 0 };
@@ -384,7 +390,7 @@ private:
     RenderTarget* m_target { nullptr };
     bool m_isVisible { false };
     bool m_useExplicitSync { false };
-    std::atomic<bool> m_isOpaque { true };
+    std::atomic<ColorComponents> m_backgroundColor { white };
     std::unique_ptr<RunLoop::Timer> m_releaseUnusedBuffersTimer;
 #if ENABLE(DAMAGE_TRACKING)
     std::optional<WebCore::Damage> m_frameDamage;

@@ -90,6 +90,11 @@ using namespace WebCore;
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(AcceleratedSurface);
 
+static inline bool isColorOpaque(AcceleratedSurface::ColorComponents color)
+{
+    return color[3] == WebCore::AlphaTraits<float>::opaque;
+}
+
 static uint64_t generateID()
 {
     static uint64_t identifier = 0;
@@ -115,11 +120,13 @@ AcceleratedSurface::AcceleratedSurface(WebPage& webPage, Function<void()>&& fram
     , m_swapChain(m_id)
     , m_isVisible(webPage.activityState().contains(ActivityState::IsVisible))
     , m_useExplicitSync(useExplicitSync())
-    , m_isOpaque(!webPage.backgroundColor().has_value() || webPage.backgroundColor()->isOpaque())
 {
+    auto color = webPage.backgroundColor();
+    m_backgroundColor = color ? color->toResolvedColorComponentsInColorSpace(WebCore::ColorSpace::SRGB) : white;
+
 #if (PLATFORM(GTK) || ENABLE(WPE_PLATFORM)) && (USE(GBM) || OS(ANDROID))
     if (m_swapChain.type() == SwapChain::Type::EGLImage)
-        m_swapChain.setupBufferFormat(m_webPage->preferredBufferFormats(), m_isOpaque);
+        m_swapChain.setupBufferFormat(m_webPage->preferredBufferFormats(), isColorOpaque(m_backgroundColor));
 #endif
 #if USE(WPE_RENDERER)
     if (m_swapChain.type() == SwapChain::Type::WPEBackend)
@@ -920,7 +927,7 @@ void AcceleratedSurface::preferredBufferFormatsDidChange()
     if (m_swapChain.type() != SwapChain::Type::EGLImage)
         return;
 
-    m_swapChain.setupBufferFormat(m_webPage->preferredBufferFormats(), m_isOpaque);
+    m_swapChain.setupBufferFormat(m_webPage->preferredBufferFormats(), isColorOpaque(m_backgroundColor));
 }
 #endif
 
@@ -941,21 +948,22 @@ void AcceleratedSurface::visibilityDidChange(bool isVisible)
     }
 }
 
-bool AcceleratedSurface::backgroundColorDidChange()
+void AcceleratedSurface::backgroundColorDidChange()
 {
+    ASSERT(RunLoop::isMain());
     const auto& color = m_webPage->backgroundColor();
-    auto isOpaque = !color.has_value() || color->isOpaque();
-    if (m_isOpaque == isOpaque)
-        return false;
 
-    m_isOpaque = isOpaque;
+    bool wasOpaque = isColorOpaque(m_backgroundColor);
+    m_backgroundColor = color ? color->toResolvedColorComponentsInColorSpace(WebCore::ColorSpace::SRGB) : white;
+    bool isOpaque = isColorOpaque(m_backgroundColor);
+
+    if (isOpaque == wasOpaque)
+        return;
 
 #if (PLATFORM(GTK) || ENABLE(WPE_PLATFORM)) && (USE(GBM) || OS(ANDROID))
     if (m_swapChain.type() == SwapChain::Type::EGLImage)
-        m_swapChain.setupBufferFormat(m_webPage->preferredBufferFormats(), m_isOpaque);
+        m_swapChain.setupBufferFormat(m_webPage->preferredBufferFormats(), isOpaque);
 #endif
-
-    return true;
 }
 
 void AcceleratedSurface::releaseUnusedBuffersTimerFired()
@@ -1030,10 +1038,16 @@ void AcceleratedSurface::willRenderFrame(const IntSize& size)
         glViewport(0, 0, size.width(), size.height());
 }
 
-void AcceleratedSurface::clear()
+void AcceleratedSurface::clear(const OptionSet<WebCore::CompositionReason>& reasons)
 {
-    if (!m_isOpaque) {
+    ASSERT(!RunLoop::isMain());
+    auto backgroundColor = m_backgroundColor.load();
+    if (!isColorOpaque(backgroundColor)) {
         glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+    } else if (reasons.contains(CompositionReason::AsyncScrolling)) {
+        auto [r, g, b, a] = backgroundColor;
+        glClearColor(r, g, b, a);
         glClear(GL_COLOR_BUFFER_BIT);
     }
 }
