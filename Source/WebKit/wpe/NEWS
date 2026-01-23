@@ -1,3 +1,31 @@
+==================
+WPE WebKit 2.51.90
+==================
+
+What's new in WPE WebKit 2.51.90?
+
+  - Improve performance of accelerated 2D canvas by recording operations
+    for batched replay.
+  - Remove the WPE Qt5 API binding. The Qt6 API is still available.
+  - Add support to optinally use the WOFF2 support from FreeType. When enabled, the
+    libwoff2 library is not needed.
+  - Add support for damage propagation in non-composited mode.
+  - Add webkit_context_menu_get_position() and webkit_context_menu_item_get_title().
+  - Add hyphenation support through libhyphen. The feature may be toggled at build
+    time via the USE_LIBHYPHEN CMake option.
+  - Add WPEPlatform API to notify of graphics buffers configuration changes for a WPEView.
+  - Add WPEPlatform API to create topleves using wpe_display_create_toplevel().
+  - When using WPEPlatform, rendering of web views is now paused while they are detached
+    from a WPEToplevel.
+  - Change context menu behaviour to match the GTK port more closely.
+  - Change WPEScreenSyncObserver to support multiple callbacks.
+  - Fix handling of touch scrolling in builds configured with ENABLE_WPE_LEGACY_API=OFF.
+  - Fix introspection annotations in wpe_buffer_formats_builder_end() to properly
+    indicate ownership of the passed WPEBufferFormatsBuilder reference.
+  - Fix web process translatable strings to follow system locale.
+  - Fix DMA-BUF buffers leaked with GTK3 when the web view is destroyed.
+  - Fix several crashes and rendering issues.
+
 =================
 WPE WebKit 2.51.4
 =================
