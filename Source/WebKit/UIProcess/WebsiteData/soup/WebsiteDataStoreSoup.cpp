@@ -31,6 +31,7 @@
 #include "NetworkProcessMessages.h"
 #include "WebProcessPool.h"
 #include "WebsiteDataStoreParameters.h"
+#include <wtf/glib/Application.h>
 
 namespace WebKit {
 
@@ -43,6 +44,7 @@ void WebsiteDataStore::platformSetNetworkParameters(WebsiteDataStoreParameters& 
     networkSessionParameters.cookiePersistentStoragePath = m_cookiePersistentStoragePath;
     networkSessionParameters.cookiePersistentStorageType = m_cookiePersistentStorageType;
     networkSessionParameters.cookieAcceptPolicy = m_cookieAcceptPolicy;
+    networkSessionParameters.sourceApplicationBundleIdentifier = String::fromUTF8(WTF::applicationID().span());
 }
 
 void WebsiteDataStore::setPersistentCredentialStorageEnabled(bool enabled)
