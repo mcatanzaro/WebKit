@@ -591,7 +591,7 @@ void JSPromise::resolveWithInternalMicrotaskForAsyncAwait(JSGlobalObject* global
 
     if (resolution.inherits<JSPromise>()) {
         auto* promise = jsCast<JSPromise*>(resolution);
-        if (promiseSpeciesWatchpointIsValid(promise)) [[likely]]
+        if (promiseSpeciesWatchpointIsValid(vm, promise)) [[likely]]
             return promise->performPromiseThenWithInternalMicrotask(vm, globalObject, task, jsUndefined(), context);
 
         JSValue constructor;
@@ -701,7 +701,7 @@ JSObject* promiseSpeciesConstructor(JSGlobalObject* globalObject, JSObject* this
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     if (auto* promise = jsDynamicCast<JSPromise*>(thisObject)) [[likely]] {
-        if (promiseSpeciesWatchpointIsValid(promise)) [[likely]]
+        if (promiseSpeciesWatchpointIsValid(vm, promise)) [[likely]]
             return globalObject->promiseConstructor();
     }
 
@@ -749,7 +749,7 @@ JSObject* JSPromise::then(JSGlobalObject* globalObject, JSValue onFulfilled, JSV
 
     JSObject* resultPromise;
     JSValue resultPromiseCapability;
-    if (promiseSpeciesWatchpointIsValid(this)) [[likely]] {
+    if (promiseSpeciesWatchpointIsValid(vm, this)) [[likely]] {
         if (inherits<JSInternalPromise>())
             resultPromise = JSInternalPromise::create(vm, globalObject->internalPromiseStructure());
         else
@@ -778,7 +778,7 @@ JSObject* JSPromise::promiseResolve(JSGlobalObject* globalObject, JSObject* cons
 
     if (argument.inherits<JSPromise>()) {
         auto* promise = jsCast<JSPromise*>(argument);
-        if (promiseSpeciesWatchpointIsValid(promise)) [[likely]]
+        if (promiseSpeciesWatchpointIsValid(vm, promise)) [[likely]]
             return promise;
 
         auto property = promise->get(globalObject, vm.propertyNames->constructor);
