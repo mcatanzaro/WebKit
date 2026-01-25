@@ -242,7 +242,7 @@ static String webkitDrmGetModifierName(uint64_t modifier)
     std::unique_ptr<char, decltype(free)*> modifierName(drmGetFormatModifierName(modifier), free);
     return makeString(String::fromUTF8(modifierVendor.get()), "_"_s, String::fromUTF8(modifierName.get()));
 #else
-    return { }
+    return { };
 #endif
 }
 
