@@ -366,6 +366,7 @@ bool JSArrayBufferView::isIteratorProtocolFastAndNonObservable()
     if (!globalObject->isTypedArrayPrototypeIteratorProtocolFastAndNonObservable(typedArrayType))
         return false;
 
+    VM& vm = globalObject->vm();
     Structure* structure = this->structure();
     // This is the fast case. Many TypedArrays will be an original typed array structure.
     if (globalObject->isOriginalTypedArrayStructure(structure, true) || globalObject->isOriginalTypedArrayStructure(structure, false))
@@ -374,7 +375,10 @@ bool JSArrayBufferView::isIteratorProtocolFastAndNonObservable()
     if (getPrototypeDirect() != globalObject->typedArrayPrototype(typedArrayType))
         return false;
 
-    return !structure->hasSpecialProperties();
+    if (getDirectOffset(vm, vm.propertyNames->iteratorSymbol) != invalidOffset)
+        return false;
+
+    return true;
 }
 
 } // namespace JSC
