@@ -175,9 +175,10 @@ void VMManager::decrementActiveVMs(VM& vm) WTF_REQUIRES_LOCK(m_worldLock)
     // it to a token value of invalidNumberOfActiveVMs (to aid debugging).
     if (m_worldMode == Mode::RunAll)
         ASSERT(m_numberOfActiveVMs == invalidNumberOfActiveVMs);
-    else
+    else if (vm.traps().m_hasBeenCountedAsActive) {
         m_numberOfActiveVMs--;
-    vm.traps().m_hasBeenCountedAsActive = false;
+        vm.traps().m_hasBeenCountedAsActive = false;
+    }
 
     auto shouldResumeAll = [&] {
         if (m_worldMode != Mode::RunAll && !m_numberOfActiveVMs)
