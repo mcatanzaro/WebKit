@@ -206,6 +206,8 @@ class Internals final
     , public RealtimeMediaSourceObserver
     , private RealtimeMediaSource::AudioSampleObserver
     , private RealtimeMediaSource::VideoFrameObserver
+#else
+    , public CanMakeWeakPtr<Internals>
 #endif
     {
     WTF_MAKE_TZONE_ALLOCATED(Internals);
