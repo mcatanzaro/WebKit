@@ -39,6 +39,7 @@
 #if HAVE(TIMERFD)
 #include <sys/timerfd.h>
 #include <time.h>
+#include <unistd.h>
 #include <wtf/SystemTracing.h>
 #endif
 
