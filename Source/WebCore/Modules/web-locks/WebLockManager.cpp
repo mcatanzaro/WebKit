@@ -272,7 +272,7 @@ void WebLockManager::didCompleteLockRequest(WebLockIdentifier lockIdentifier, bo
 
             waitingPromise->whenSettled([weakThis = WeakPtr { manager }, lockIdentifier = *request.lockIdentifier, name = request.name, waitingPromise] {
                 RefPtr protectedThis = weakThis.get();
-                if (!protectedThis)
+                if (!protectedThis || waitingPromise->isSuspended())
                     return;
                 protectedThis->m_mainThreadBridge->releaseLock(lockIdentifier, name);
                 protectedThis->settleReleasePromise(lockIdentifier, static_cast<JSC::JSValue>(waitingPromise->promise()));
