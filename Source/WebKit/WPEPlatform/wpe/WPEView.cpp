@@ -380,7 +380,7 @@ static void wpe_view_class_init(WPEViewClass* viewClass)
      * @n_buffers: the amount of buffers in the @buffers array
      *
      * Emitted to notify that the set of graphics buffers used to render
-     * the view have changged.
+     * the view have changed.
      *
      * When buffers are about to be released, @n_buffers will be zero
      * and @buffers will be %NULL.
