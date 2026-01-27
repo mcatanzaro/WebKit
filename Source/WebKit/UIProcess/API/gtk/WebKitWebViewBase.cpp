@@ -1733,7 +1733,7 @@ static gboolean webkitWebViewBaseCrossingNotifyEvent(GtkWidget* widget, GdkEvent
 #endif
 
 #if USE(GTK4)
-static void webkitWebViewBaseEnter(WebKitWebViewBase* webViewBase, double x, double y, GdkCrossingMode, GtkEventController*)
+static void webkitWebViewBaseEnter(WebKitWebViewBase* webViewBase, double x, double y, GtkEventController*)
 {
     WebKitWebViewBasePrivate* priv = webViewBase->priv;
     if (priv->dialog)
@@ -1773,7 +1773,7 @@ static gboolean webkitWebViewBaseMotion(WebKitWebViewBase* webViewBase, double x
     return GDK_EVENT_PROPAGATE;
 }
 
-static void webkitWebViewBaseLeave(WebKitWebViewBase* webViewBase, GdkCrossingMode, GtkEventController*)
+static void webkitWebViewBaseLeave(WebKitWebViewBase* webViewBase, GtkEventController*)
 {
     WebKitWebViewBasePrivate* priv = webViewBase->priv;
     if (priv->dialog)
