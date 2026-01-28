@@ -1350,6 +1350,8 @@ void NetworkConnectionToWebProcess::queryStorageAccessPermission(RegistrableDoma
             return;
         }
     }
+
+    completionHandler(PermissionState::Denied);
 }
 
 void NetworkConnectionToWebProcess::setLoginStatus(RegistrableDomain&& domain, IsLoggedIn loggedInStatus, std::optional<WebCore::LoginStatus>&& lastAuthentication, CompletionHandler<void()>&& completionHandler)
