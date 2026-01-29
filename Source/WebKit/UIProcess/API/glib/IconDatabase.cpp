@@ -225,7 +225,7 @@ void IconDatabase::pruneTimerFired()
 
     if (!m_pruneIconsStatement) {
         m_pruneIconsStatement = m_db->prepareStatement("DELETE FROM IconInfo WHERE stamp <= (?);"_s);
-        if (m_pruneIconsStatement) {
+        if (!m_pruneIconsStatement) {
             LOG_ERROR("Preparing statement pruneIcons failed");
             return;
         }
