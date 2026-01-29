@@ -42,6 +42,10 @@
 #include <wtf/UniqueRef.h>
 #include <wtf/WeakHashSet.h>
 
+#if USE(COORDINATED_GRAPHICS) && HAVE(DISPLAY_LINK)
+#include "DisplayLinkObserverID.h"
+#endif
+
 namespace API {
 class Attachment;
 class ContentWorld;
@@ -1056,6 +1060,9 @@ public:
     void setNeedsScrollGeometryUpdates(bool);
 
     void setHasActiveAnimatedScrolls(bool isRunning);
+#if USE(COORDINATED_GRAPHICS) && HAVE(DISPLAY_LINK)
+    void setHasActiveAnimatedScrollsForAsyncScrolling(DisplayLinkObserverID, bool isRunning);
+#endif
 
 #if ENABLE(MODEL_PROCESS)
     bool hasModelElement() const { return m_hasModelElement; }

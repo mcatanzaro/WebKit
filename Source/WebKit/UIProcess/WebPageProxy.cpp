@@ -9718,6 +9718,17 @@ void WebPageProxy::setHasActiveAnimatedScrolls(bool isRunning)
 #endif
 }
 
+#if USE(COORDINATED_GRAPHICS) && HAVE(DISPLAY_LINK)
+void WebPageProxy::setHasActiveAnimatedScrollsForAsyncScrolling(DisplayLinkObserverID observerID, bool isRunning)
+{
+    if (isRunning)
+        protectedLegacyMainFrameProcess()->startDisplayLink(observerID, m_displayID.value_or(0), FullSpeedFramesPerSecond);
+    else
+        protectedLegacyMainFrameProcess()->stopDisplayLink(observerID, m_displayID.value_or(0));
+    setHasActiveAnimatedScrolls(isRunning);
+}
+#endif
+
 #if ENABLE(MODEL_PROCESS)
 void WebPageProxy::setHasModelElement(bool hasModelElement)
 {

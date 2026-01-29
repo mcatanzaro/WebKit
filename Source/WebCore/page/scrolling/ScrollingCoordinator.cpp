@@ -52,7 +52,7 @@ namespace WebCore {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(ScrollingCoordinator);
 
-#if PLATFORM(IOS_FAMILY) || !ENABLE(ASYNC_SCROLLING)
+#if PLATFORM(IOS_FAMILY) || !ENABLE(ASYNC_SCROLLING) || USE(COORDINATED_GRAPHICS)
 Ref<ScrollingCoordinator> ScrollingCoordinator::create(Page* page)
 {
     return adoptRef(*new ScrollingCoordinator(page));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018, 2024 Igalia S.L.
+ * Copyright (C) 2018, 2024, 2026 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,19 +29,21 @@
 #include "ScrollingCoordinatorCoordinated.h"
 
 #if ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
-#include "ScrollingTreeCoordinated.h"
+#include "WebPage.h"
+#include "WebPageProxyMessages.h"
+#include "WebProcess.h"
+#include <WebCore/ScrollingTreeCoordinated.h>
 
-namespace WebCore {
+namespace WebKit {
 
-Ref<ScrollingCoordinator> ScrollingCoordinator::create(Page* page)
+ScrollingCoordinatorCoordinated::ScrollingCoordinatorCoordinated(WebPage* page)
+    : WebCore::ThreadedScrollingCoordinator(page->corePage())
+#if HAVE(DISPLAY_LINK)
+    , m_destinationID(page->identifier().toUInt64())
+    , m_observerID(DisplayLinkObserverID::generate())
+#endif
 {
-    return adoptRef(*new ScrollingCoordinatorCoordinated(page));
-}
-
-ScrollingCoordinatorCoordinated::ScrollingCoordinatorCoordinated(Page* page)
-    : ThreadedScrollingCoordinator(page)
-{
-    setScrollingTree(ScrollingTreeCoordinated::create(*this));
+    setScrollingTree(WebCore::ScrollingTreeCoordinated::create(*this));
 }
 
 ScrollingCoordinatorCoordinated::~ScrollingCoordinatorCoordinated()
@@ -49,11 +51,27 @@ ScrollingCoordinatorCoordinated::~ScrollingCoordinatorCoordinated()
     ASSERT(!scrollingTree());
 }
 
-void ScrollingCoordinatorCoordinated::didCompletePlatformRenderingUpdate()
+void ScrollingCoordinatorCoordinated::pageDestroyed()
 {
-    downcast<ScrollingTreeCoordinated>(scrollingTree())->didCompletePlatformRenderingUpdate();
+    WebCore::ThreadedScrollingCoordinator::pageDestroyed();
 }
 
-} // namespace WebCore
+#if HAVE(DISPLAY_LINK)
+void ScrollingCoordinatorCoordinated::hasNodeWithAnimatedScrollChanged(bool haveAnimatedScrollingNodes)
+{
+    ASSERT(scrollingTree());
+    RefPtr connection = WebProcess::singleton().parentProcessConnection();
+    if (!connection)
+        return;
+    connection->send(Messages::WebPageProxy::SetHasActiveAnimatedScrollsForAsyncScrolling(m_observerID, haveAnimatedScrollingNodes), m_destinationID);
+}
+#endif
+
+void ScrollingCoordinatorCoordinated::didCompletePlatformRenderingUpdate()
+{
+    downcast<WebCore::ScrollingTreeCoordinated>(scrollingTree())->didCompletePlatformRenderingUpdate();
+}
+
+} // namespace WebKit
 
 #endif // ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)

@@ -172,6 +172,10 @@
 #include "TiledCoreAnimationScrollingCoordinator.h"
 #endif
 
+#if USE(COORDINATED_GRAPHICS)
+#include "ScrollingCoordinatorCoordinated.h"
+#endif
+
 #if PLATFORM(COCOA)
 #include "WebIconUtilities.h"
 #endif
@@ -1357,6 +1361,8 @@ RefPtr<WebCore::ScrollingCoordinator> WebChromeClient::createScrollingCoordinato
     }
 #elif PLATFORM(COCOA)
     return RemoteScrollingCoordinator::create(page.get());
+#elif USE(COORDINATED_GRAPHICS)
+    return ScrollingCoordinatorCoordinated::create(page.get());
 #else
     return nullptr;
 #endif

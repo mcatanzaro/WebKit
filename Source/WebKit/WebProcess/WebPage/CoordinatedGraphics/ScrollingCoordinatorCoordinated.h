@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018, 2024 Igalia S.L.
+ * Copyright (C) 2018, 2024, 2026 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,19 +28,37 @@
 #pragma once
 
 #if ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
-#include "ThreadedScrollingCoordinator.h"
+#include <WebCore/ThreadedScrollingCoordinator.h>
 
-namespace WebCore {
+#if HAVE(DISPLAY_LINK)
+#include "DisplayLinkObserverID.h"
+#endif
 
-class ScrollingCoordinatorCoordinated final : public ThreadedScrollingCoordinator {
+namespace WebKit {
+
+class WebPage;
+
+class ScrollingCoordinatorCoordinated final : public WebCore::ThreadedScrollingCoordinator {
 public:
-    explicit ScrollingCoordinatorCoordinated(Page*);
-    virtual ~ScrollingCoordinatorCoordinated();
+    static Ref<ScrollingCoordinatorCoordinated> create(WebPage* page)
+    {
+        return adoptRef(*new ScrollingCoordinatorCoordinated(page));
+    }
 
 private:
+    explicit ScrollingCoordinatorCoordinated(WebPage*);
+    ~ScrollingCoordinatorCoordinated() final;
+
     void didCompletePlatformRenderingUpdate() final;
+    void pageDestroyed() final;
+#if HAVE(DISPLAY_LINK)
+    void hasNodeWithAnimatedScrollChanged(bool) final;
+
+    uint64_t m_destinationID { 0 };
+    DisplayLinkObserverID m_observerID;
+#endif
 };
 
-} // namespace WebCore
+} // namespace WebKit
 
 #endif // ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
