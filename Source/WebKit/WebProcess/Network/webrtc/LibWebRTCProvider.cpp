@@ -36,6 +36,7 @@
 #include "LibWebRTCNetwork.h"
 #include "LibWebRTCNetworkManager.h"
 #include "RTCDataChannelRemoteManager.h"
+#include "RTCSocketCreationFlags.h"
 #include "WebPage.h"
 #include "WebProcess.h"
 #include <WebCore/Page.h>
