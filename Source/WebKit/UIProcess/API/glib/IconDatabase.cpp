@@ -67,22 +67,29 @@ IconDatabase::IconDatabase(const String& path, AllowDatabaseWrite allowDatabaseW
             return;
         }
 
-        auto versionStatement = m_db->prepareStatement("SELECT value FROM IconDatabaseInfo WHERE key = 'Version';"_s);
-        auto databaseVersionNumber = versionStatement ? versionStatement->columnInt(0) : 0;
-        if (databaseVersionNumber > currentDatabaseVersion) {
-            LOG(IconDatabase, "Database version number %d is greater than our current version number %d - closing the database to prevent overwriting newer versions",
-                databaseVersionNumber, currentDatabaseVersion);
-            m_db->close();
-            return;
-        }
+        if (m_db->tableExists("IconDatabaseInfo"_s)) {
+            auto versionStatement = m_db->prepareStatement("SELECT value FROM IconDatabaseInfo WHERE key = 'Version';"_s);
+            if (!versionStatement) {
+                RELEASE_LOG_ERROR(IconDatabase, "Unable to prepare version statement (%i) - %s", m_db->lastError(), m_db->lastErrorMsg());
+                return;
+            }
 
-        if (databaseVersionNumber < currentDatabaseVersion) {
-            if (m_allowDatabaseWrite == AllowDatabaseWrite::No) {
+            auto databaseVersionNumber = versionStatement ? versionStatement->columnInt(0) : 0;
+            if (databaseVersionNumber > currentDatabaseVersion) {
+                LOG(IconDatabase, "Database version number %d is greater than our current version number %d - closing the database to prevent overwriting newer versions",
+                    databaseVersionNumber, currentDatabaseVersion);
                 m_db->close();
                 return;
             }
 
-            m_db->clearAllTables();
+            if (databaseVersionNumber < currentDatabaseVersion) {
+                if (m_allowDatabaseWrite == AllowDatabaseWrite::No) {
+                    m_db->close();
+                    return;
+                }
+
+                m_db->clearAllTables();
+            }
         }
 
         // Reduce sqlite RAM cache size from default 2000 pages (~1.5kB per page). 3MB of cache for icon database is overkill.
