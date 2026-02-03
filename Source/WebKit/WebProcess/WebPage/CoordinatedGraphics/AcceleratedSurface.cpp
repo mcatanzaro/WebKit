@@ -450,6 +450,7 @@ AcceleratedSurface::RenderTargetEGLImage::RenderTargetEGLImage(uint64_t surfaceI
 }
 #endif // OS(ANDROID)
 
+#if USE(GBM) || OS(ANDROID)
 void AcceleratedSurface::RenderTargetEGLImage::initializeColorBuffer()
 {
     glGenRenderbuffers(1, &m_colorBuffer);
@@ -458,7 +459,6 @@ void AcceleratedSurface::RenderTargetEGLImage::initializeColorBuffer()
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_colorBuffer);
 }
 
-#if USE(GBM) || OS(ANDROID)
 AcceleratedSurface::RenderTargetEGLImage::~RenderTargetEGLImage()
 {
     if (m_colorBuffer)
