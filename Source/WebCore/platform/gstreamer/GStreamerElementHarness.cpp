@@ -288,6 +288,15 @@ bool GStreamerElementHarness::pushEvent(GRefPtr<GstEvent>&& event)
     return result;
 }
 
+void GStreamerElementHarness::storeStickyEvent(const GRefPtr<GstEvent>& event)
+{
+    GST_TRACE_OBJECT(m_element.get(), "Storing sticky event %" GST_PTR_FORMAT, event.get());
+    auto result = gst_pad_store_sticky_event(m_srcPad.get(), event.get());
+    GST_TRACE_OBJECT(m_element.get(), "Result: %s", gst_flow_get_name(result));
+    if (isStarted() && result == GST_FLOW_OK)
+        pushEvent(GRefPtr(event));
+}
+
 GStreamerElementHarness::Stream::Stream(GRefPtr<GstPad>&& pad, RefPtr<GStreamerElementHarness>&& downstreamHarness, GRefPtr<GstCaps>&& allowedOutputCaps)
     : m_pad(WTF::move(pad))
     , m_downstreamHarness(WTF::move(downstreamHarness))

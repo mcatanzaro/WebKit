@@ -90,6 +90,7 @@ private:
     GRefPtr<GstCaps> m_colorConvertInputCaps;
     GRefPtr<GstCaps> m_colorConvertOutputCaps;
     bool m_hasMultipleTemporalLayers { false };
+    String m_orientation;
 };
 
 void GStreamerVideoEncoder::create(const String& codecName, const VideoEncoder::Config& config, CreateCallback&& callback, DescriptionCallback&& descriptionCallback, OutputCallback&& outputCallback)
@@ -295,7 +296,7 @@ String GStreamerInternalVideoEncoder::initialize(const String& codecName)
 {
     GST_DEBUG_OBJECT(m_harness->element(), "Initializing encoder for codec %s", codecName.ascii().data());
     IntSize size { static_cast<int>(m_config.width), static_cast<int>(m_config.height) };
-    if (!videoEncoderSetCodec(WEBKIT_VIDEO_ENCODER(m_harness->element()), { codecName, m_config.useAnnexB }, size))
+    if (!videoEncoderSetCodec(WEBKIT_VIDEO_ENCODER(m_harness->element()), { codecName, m_config.useAnnexB }, size, { }, true))
         return "Unable to set encoder format"_s;
 
     applyRates();
@@ -321,6 +322,16 @@ bool GStreamerInternalVideoEncoder::encode(VideoEncoder::RawFrame&& rawFrame, bo
 
     auto& gstVideoFrame = downcast<VideoFrameGStreamer>(rawFrame.frame.get());
     GRefPtr sample = gstVideoFrame.sample();
+
+    auto orientation = makeString(gstVideoFrame.isMirrored() ? "flip-"_s : ""_s, "rotate-"_s, gstVideoFrame.rotation());
+    if (orientation != m_orientation) {
+        auto orientationCString = orientation.utf8();
+        GST_DEBUG_OBJECT(m_harness->element(), "New orientation: %s", orientationCString.data());
+        auto tags = adoptGRef(gst_tag_list_new(GST_TAG_IMAGE_ORIENTATION, orientationCString.data(), nullptr));
+        auto event = adoptGRef(gst_event_new_tag(tags.leakRef()));
+        m_harness->storeStickyEvent(event);
+        m_orientation = WTF::move(orientation);
+    }
 
     if (m_config.frameRate) {
         int framerateNumerator, framerateDenominator;

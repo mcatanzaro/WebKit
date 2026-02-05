@@ -94,6 +94,8 @@ public:
     bool pushBuffer(GRefPtr<GstBuffer>&&);
     bool pushEvent(GRefPtr<GstEvent>&&);
 
+    void storeStickyEvent(const GRefPtr<GstEvent>&);
+
     GstPad* inputPad() const { return m_srcPad.get(); }
     const GRefPtr<GstCaps>& inputCaps() const { return m_inputCaps; }
     const Vector<RefPtr<Stream>>& outputStreams() const { return m_outputStreams; }
