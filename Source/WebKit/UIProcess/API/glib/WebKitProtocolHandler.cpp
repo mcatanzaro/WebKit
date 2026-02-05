@@ -806,7 +806,7 @@ void WebKitProtocolHandler::handleGPU(WebKitURISchemeRequest* request, RenderPro
     auto infoAsString = jsonObject->toJSONString();
     htmlBuilder.append("<script>function copyAsJSON() { "
         "var textArea = document.createElement('textarea');"
-        "textArea.value = JSON.stringify("_s, infoAsString, "null, 4);"_s,
+        "textArea.value = JSON.stringify("_s, infoAsString, ", null, 4);"_s,
         "document.body.appendChild(textArea);"
         "textArea.focus();"
         "textArea.select();"
