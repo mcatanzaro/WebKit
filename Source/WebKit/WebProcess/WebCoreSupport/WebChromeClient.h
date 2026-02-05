@@ -309,7 +309,7 @@ private:
     RefPtr<WebCore::ScrollingCoordinator> createScrollingCoordinator(WebCore::Page&) const final;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) || USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
     void ensureScrollbarsController(WebCore::Page&, WebCore::ScrollableArea&, bool update = false) const final;
 #endif
 

@@ -476,6 +476,26 @@ void AsyncScrollingCoordinator::setScrollbarColor(ScrollableArea& scrollableArea
     stateNode->setScrollbarColor(scrollbarColor);
 }
 
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
+void AsyncScrollingCoordinator::setHoveredAndPressedScrollbarParts(ScrollableArea& scrollableArea)
+{
+    ASSERT(isMainThread());
+    ASSERT(page());
+    auto stateNode = dynamicDowncast<ScrollingStateScrollingNode>(stateNodeForScrollableArea(scrollableArea));
+    if (!stateNode)
+        return;
+    ScrollbarHoverState state;
+    if (RefPtr scrollbar = scrollableArea.verticalScrollbar()) {
+        state.hoveredPartInVerticalScrollbar = scrollbar->hoveredPart();
+        state.pressedPartInVerticalScrollbar = scrollbar->pressedPart();
+    }
+    if (RefPtr scrollbar = scrollableArea.horizontalScrollbar()) {
+        state.hoveredPartInHorizontalScrollbar = scrollbar->hoveredPart();
+        state.pressedPartInHorizontalScrollbar = scrollbar->pressedPart();
+    }
+    stateNode->setScrollbarHoverState(WTF::move(state));
+}
+#else
 void AsyncScrollingCoordinator::setMouseIsOverScrollbar(Scrollbar* scrollbar, bool isOverScrollbar)
 {
     ASSERT(isMainThread());
@@ -485,6 +505,7 @@ void AsyncScrollingCoordinator::setMouseIsOverScrollbar(Scrollbar* scrollbar, bo
         return;
     stateNode->setScrollbarHoverState({ scrollbar->orientation() == ScrollbarOrientation::Vertical ? false : isOverScrollbar, scrollbar->orientation() == ScrollbarOrientation::Vertical ? isOverScrollbar : false });
 }
+#endif
 
 void AsyncScrollingCoordinator::setMouseIsOverContentArea(ScrollableArea& scrollableArea, bool isOverContentArea)
 {
@@ -520,6 +541,18 @@ void AsyncScrollingCoordinator::setLayerHostingContextIdentifierForFrameHostingN
         return;
     stateNode->setLayerHostingContextIdentifier(identifier);
 }
+
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
+void AsyncScrollingCoordinator::setScrollbarOpacity(ScrollableArea& scrollableArea)
+{
+    ASSERT(isMainThread());
+    ASSERT(page());
+    auto stateNode = dynamicDowncast<ScrollingStateScrollingNode>(stateNodeForScrollableArea(scrollableArea));
+    if (!stateNode)
+        return;
+    stateNode->setScrollbarOpacity(scrollableArea.scrollbarOpacity());
+}
+#endif
 
 void AsyncScrollingCoordinator::setScrollbarEnabled(Scrollbar& scrollbar)
 {
@@ -1104,6 +1137,9 @@ void AsyncScrollingCoordinator::setScrollingNodeScrollableAreaGeometry(std::opti
     scrollingNode->setScrollableAreaSize(scrollableArea.visibleSize());
 
     scrollingNode->setUseDarkAppearanceForScrollbars(scrollableArea.useDarkAppearanceForScrollbars());
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
+    scrollingNode->setScrollbarOpacity(scrollableArea.scrollbarOpacity());
+#endif
 
     ScrollableAreaParameters scrollParameters;
     scrollParameters.horizontalScrollElasticity = scrollableArea.horizontalOverscrollBehavior() == OverscrollBehavior::None ? ScrollElasticity::None : scrollableArea.horizontalScrollElasticity();

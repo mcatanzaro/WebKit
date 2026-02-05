@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2019 Apple Inc. All rights reserved.
- * Copyright (C) 2019, 2021, 2024 Igalia S.L.
+ * Copyright (C) 2026 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,40 +23,37 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "config.h"
+#include "ScrollingStateScrollingNode.h"
 
-#include "ScrollingTreeScrollingNodeDelegate.h"
-
-#if ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
-#include "ThreadedScrollingTreeScrollingNodeDelegate.h"
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
+#include "ScrollbarThemeAdwaita.h"
+#include "ScrollerImpAdwaita.h"
 
 namespace WebCore {
 
-class ScrollerPairCoordinated;
+void ScrollingStateScrollingNode::setScrollerImpsFromScrollbars(Scrollbar* verticalScrollbar, Scrollbar* horizontalScrollbar)
+{
+    ScrollbarTheme& scrollbarTheme = ScrollbarTheme::theme();
+    if (scrollbarTheme.isMockTheme())
+        return;
 
-class ScrollingTreeScrollingNodeDelegateCoordinated final : public ThreadedScrollingTreeScrollingNodeDelegate {
-public:
-    explicit ScrollingTreeScrollingNodeDelegateCoordinated(ScrollingTreeScrollingNode&, bool scrollAnimatorEnabled);
-    virtual ~ScrollingTreeScrollingNodeDelegateCoordinated();
+    auto& adwaitaTheme = downcast<ScrollbarThemeAdwaita>(scrollbarTheme);
 
-    void updateVisibleLengths();
-    bool handleWheelEvent(const PlatformWheelEvent&);
+    ScrollerImpAdwaita* verticalPainter = verticalScrollbar && verticalScrollbar->supportsUpdateOnSecondaryThread()
+        ? adwaitaTheme.scrollerImpForScrollbar(*verticalScrollbar) : nullptr;
+    ScrollerImpAdwaita* horizontalPainter = horizontalScrollbar && horizontalScrollbar->supportsUpdateOnSecondaryThread()
+        ? adwaitaTheme.scrollerImpForScrollbar(*horizontalScrollbar) : nullptr;
 
-private:
-#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
-    // ThreadedScrollingTreeScrollingNodeDelegate
-    void updateFromStateNode(const ScrollingStateScrollingNode&) final;
-#endif
+    if (m_verticalScrollerImp == verticalPainter && m_horizontalScrollerImp == horizontalPainter)
+        return;
 
-    // ScrollingEffectsControllerClient.
-    bool scrollAnimationEnabled() const final { return m_scrollAnimatorEnabled; }
+    m_verticalScrollerImp = verticalPainter;
+    m_horizontalScrollerImp = horizontalPainter;
 
-    bool m_scrollAnimatorEnabled { false };
-#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
-    const Ref<ScrollerPairCoordinated> m_scrollerPair;
-#endif
-};
+    setPropertyChanged(Property::PainterForScrollbar);
+}
 
 } // namespace WebCore
 
-#endif // ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
+#endif // USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)

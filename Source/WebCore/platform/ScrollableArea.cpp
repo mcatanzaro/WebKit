@@ -288,6 +288,17 @@ bool ScrollableArea::handleTouchEvent(const PlatformTouchEvent& touchEvent)
 }
 #endif
 
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
+float ScrollableArea::scrollbarOpacity() const
+{
+    if (auto scrollbar = verticalScrollbar())
+        return scrollbar->opacity();
+    if (auto scrollbar = horizontalScrollbar())
+        return scrollbar->opacity();
+    return 1;
+}
+#endif
+
 // NOTE: Only called from Internals for testing.
 void ScrollableArea::setScrollOffsetFromInternals(const ScrollOffset& offset)
 {

@@ -54,7 +54,10 @@ if (USE_COORDINATED_GRAPHICS)
         "${WEBCORE_DIR}/platform/graphics/texmap/coordinated"
     )
     list(APPEND WebCore_SOURCES
+        page/scrolling/coordinated/ScrollerCoordinated.cpp
+        page/scrolling/coordinated/ScrollerPairCoordinated.cpp
         page/scrolling/coordinated/ScrollingStateNodeCoordinated.cpp
+        page/scrolling/coordinated/ScrollingStateScrollingNodeCoordinated.cpp
         page/scrolling/coordinated/ScrollingTreeCoordinated.cpp
         page/scrolling/coordinated/ScrollingTreeFixedNodeCoordinated.cpp
         page/scrolling/coordinated/ScrollingTreeFrameScrollingNodeCoordinated.cpp

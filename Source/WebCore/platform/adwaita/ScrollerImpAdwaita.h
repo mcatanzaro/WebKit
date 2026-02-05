@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2019 Apple Inc. All rights reserved.
- * Copyright (C) 2019, 2021, 2024 Igalia S.L.
+ * Copyright (C) 2026 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,38 +25,20 @@
 
 #pragma once
 
-#include "ScrollingTreeScrollingNodeDelegate.h"
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
 
-#if ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
-#include "ThreadedScrollingTreeScrollingNodeDelegate.h"
+#include "AdwaitaScrollbarPainter.h"
 
 namespace WebCore {
 
-class ScrollerPairCoordinated;
-
-class ScrollingTreeScrollingNodeDelegateCoordinated final : public ThreadedScrollingTreeScrollingNodeDelegate {
+class ScrollerImpAdwaita : public ThreadSafeRefCounted<ScrollerImpAdwaita> {
 public:
-    explicit ScrollingTreeScrollingNodeDelegateCoordinated(ScrollingTreeScrollingNode&, bool scrollAnimatorEnabled);
-    virtual ~ScrollingTreeScrollingNodeDelegateCoordinated();
-
-    void updateVisibleLengths();
-    bool handleWheelEvent(const PlatformWheelEvent&);
-
-private:
-#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
-    // ThreadedScrollingTreeScrollingNodeDelegate
-    void updateFromStateNode(const ScrollingStateScrollingNode&) final;
-#endif
-
-    // ScrollingEffectsControllerClient.
-    bool scrollAnimationEnabled() const final { return m_scrollAnimatorEnabled; }
-
-    bool m_scrollAnimatorEnabled { false };
-#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
-    const Ref<ScrollerPairCoordinated> m_scrollerPair;
-#endif
+    void paint(GraphicsContext& graphicsContext, const IntRect& damageRect, const AdwaitaScrollbarPainter::State& state)
+    {
+        AdwaitaScrollbarPainter::paint(graphicsContext, damageRect, state);
+    }
 };
 
 } // namespace WebCore
 
-#endif // ENABLE(ASYNC_SCROLLING) && USE(COORDINATED_GRAPHICS)
+#endif // USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
