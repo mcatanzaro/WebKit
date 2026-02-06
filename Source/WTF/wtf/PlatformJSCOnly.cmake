@@ -113,6 +113,7 @@ endif ()
 if (LOWERCASE_EVENT_LOOP_TYPE STREQUAL "glib")
     list(APPEND WTF_PUBLIC_HEADERS
         glib/GRefPtr.h
+        glib/GSpanExtras.h
         glib/GTypedefs.h
         glib/RunLoopSourcePriority.h
     )
@@ -123,7 +124,6 @@ if (LOWERCASE_EVENT_LOOP_TYPE STREQUAL "glib")
     if (ENABLE_REMOTE_INSPECTOR)
         list(APPEND WTF_PUBLIC_HEADERS
             glib/GSocketMonitor.h
-            glib/GSpanExtras.h
             glib/GUniquePtr.h
             glib/SocketConnection.h
         )
