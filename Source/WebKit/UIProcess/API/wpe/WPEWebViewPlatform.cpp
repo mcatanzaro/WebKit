@@ -230,7 +230,7 @@ WebPageProxy* ViewPlatform::platformWebPageProxyForGamepadInput()
     GUniquePtr<GList> toplevels(wpe_toplevel_list());
     for (GList* iter = toplevels.get(); iter; iter = g_list_next(iter)) {
         auto* toplevel = WPE_TOPLEVEL(iter->data);
-        if (wpe_toplevel_get_state(toplevel) != WPE_TOPLEVEL_STATE_ACTIVE)
+        if (!(wpe_toplevel_get_state(toplevel) & WPE_TOPLEVEL_STATE_ACTIVE))
             continue;
 
         WPEView* view = nullptr;
