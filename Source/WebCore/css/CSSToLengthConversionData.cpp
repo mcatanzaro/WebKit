@@ -42,11 +42,19 @@ CSSToLengthConversionData::CSSToLengthConversionData() = default;
 CSSToLengthConversionData::CSSToLengthConversionData(const CSSToLengthConversionData&) = default;
 CSSToLengthConversionData::CSSToLengthConversionData(CSSToLengthConversionData&&) = default;
 
+// FIXME: Only rely on the RenderView for style resolution if we have an active LocalFrameView.
+static RenderView* renderViewForDocument(const Document& document)
+{
+    if (document.view()) [[likely]]
+        return document.renderView();
+    return nullptr;
+}
+
 CSSToLengthConversionData::CSSToLengthConversionData(const RenderStyle& style, Style::BuilderState& builderState)
     : m_style(&style)
     , m_rootStyle(builderState.rootElementRenderStyle())
     , m_parentStyle(&builderState.parentRenderStyle())
-    , m_renderView(builderState.document().renderView())
+    , m_renderView(renderViewForDocument(builderState.document()))
     , m_elementForContainerUnitResolution(builderState.element())
     , m_styleBuilderState(&builderState)
 {

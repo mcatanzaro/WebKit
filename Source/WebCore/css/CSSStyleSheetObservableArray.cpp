@@ -26,7 +26,7 @@
 #include "config.h"
 #include "CSSStyleSheetObservableArray.h"
 
-#include "Document.h"
+#include "DocumentView.h"
 #include "JSCSSStyleSheet.h"
 #include "JSDOMConvert.h"
 #include "ShadowRoot.h"
