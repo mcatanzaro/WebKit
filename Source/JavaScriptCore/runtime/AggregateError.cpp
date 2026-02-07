@@ -27,7 +27,7 @@
 #include "AggregateError.h"
 
 #include "CommonIdentifiers.h"
-#include "JSArray.h"
+#include "JSArrayInlines.h"
 
 namespace JSC {
 

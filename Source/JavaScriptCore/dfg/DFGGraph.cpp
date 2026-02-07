@@ -29,6 +29,7 @@
 #if ENABLE(DFG_JIT)
 
 #include "ArrayPrototype.h"
+#include "CacheableIdentifierInlines.h"
 #include "CodeBlock.h"
 #include "CodeBlockWithJITType.h"
 #include "DFGBackwardsCFG.h"

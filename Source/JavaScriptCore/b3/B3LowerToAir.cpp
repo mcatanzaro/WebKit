@@ -2133,11 +2133,13 @@ private:
         return test(width, resCond, leftPromise, rightPromise);
     }
 
+#if CPU(ARM64)
     // ARM64 conditional compare (ccmp) optimization.
     // Converts chains of comparisons like (a == b && c == d) into ccmp instruction sequences.
     // This reduces branches and can improve performance by avoiding branch mispredictions.
 
     static constexpr unsigned maxCompareChainSize = 4;
+#endif
 
     class CompareChainNode {
         WTF_MAKE_TZONE_ALLOCATED(CompareChainNode);
