@@ -749,9 +749,13 @@ void CoordinatedPlatformLayer::updateBackingStore()
     if (m_dirtyRegion.isEmpty() && !m_pendingTilesCreation && !m_needsTilesUpdate)
         return;
 
+    Damage damage(m_size, Damage::Mode::Rectangles);
     IntRect contentsRect(IntPoint::zero(), IntSize(m_size));
-    auto updateResult = m_backingStoreProxy->updateIfNeeded(m_transformedVisibleRectIncludingFuture, contentsRect, m_contentsScale, m_pendingTilesCreation || m_needsTilesUpdate, m_dirtyRegion, *this);
+    auto updateResult = m_backingStoreProxy->updateIfNeeded(m_transformedVisibleRectIncludingFuture, contentsRect, m_contentsScale, m_pendingTilesCreation || m_needsTilesUpdate, m_dirtyRegion, damage, *this);
     m_needsTilesUpdate = false;
+#if ENABLE(DAMAGE_TRACKING)
+    addDamage(WTF::move(damage));
+#endif
     m_dirtyRegion.clear();
     if (m_animatedBackingStoreClient)
         m_animatedBackingStoreClient->update(m_visibleRect, m_backingStoreProxy->coverRect(), m_size, m_contentsScale);

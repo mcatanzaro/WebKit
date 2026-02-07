@@ -97,12 +97,12 @@ Ref<CoordinatedBackingStoreProxy> CoordinatedBackingStoreProxy::create()
     return adoptRef(*new CoordinatedBackingStoreProxy());
 }
 
-OptionSet<CoordinatedBackingStoreProxy::UpdateResult> CoordinatedBackingStoreProxy::updateIfNeeded(const IntRect& unscaledVisibleRect, const IntRect& unscaledContentsRect, float contentsScale, bool shouldCreateAndDestroyTiles, const Vector<IntRect, 1>& dirtyRegion, CoordinatedPlatformLayer& layer)
+OptionSet<CoordinatedBackingStoreProxy::UpdateResult> CoordinatedBackingStoreProxy::updateIfNeeded(const IntRect& unscaledVisibleRect, const IntRect& unscaledContentsRect, float contentsScale, bool shouldCreateAndDestroyTiles, const Vector<IntRect, 1>& dirtyRegion, Damage& damage, CoordinatedPlatformLayer& layer)
 {
     Vector<uint32_t> tilesToCreate;
     Vector<uint32_t> tilesToRemove;
     if (shouldCreateAndDestroyTiles)
-        createOrDestroyTiles(unscaledVisibleRect, unscaledContentsRect, enclosingIntRect(layer.visibleRect()).size(), contentsScale, layer.maxTextureSize(), tilesToCreate, tilesToRemove);
+        createOrDestroyTiles(unscaledVisibleRect, unscaledContentsRect, enclosingIntRect(layer.visibleRect()).size(), contentsScale, layer.maxTextureSize(), damage, tilesToCreate, tilesToRemove);
 
     if (!m_tiles.isEmpty())
         invalidateRegion(dirtyRegion);
@@ -201,7 +201,7 @@ void CoordinatedBackingStoreProxy::invalidateRegion(const Vector<IntRect, 1>& di
     }
 }
 
-void CoordinatedBackingStoreProxy::createOrDestroyTiles(const IntRect& unscaledVisibleRect, const IntRect& unscaledContentsRect, const IntSize& unscaledViewportSize, float contentsScale, int maxTextureSize, Vector<uint32_t>& tilesToCreate, Vector<uint32_t>& tilesToRemove)
+void CoordinatedBackingStoreProxy::createOrDestroyTiles(const IntRect& unscaledVisibleRect, const IntRect& unscaledContentsRect, const IntSize& unscaledViewportSize, float contentsScale, int maxTextureSize, Damage& damage, Vector<uint32_t>& tilesToCreate, Vector<uint32_t>& tilesToRemove)
 {
     float coverAreaMultiplier = MemoryPressureHandler::singleton().isUnderMemoryPressure() ? 1.0f : 2.0f;
     bool contentsScaleChanged = m_contentsScale != contentsScale;
@@ -332,6 +332,13 @@ void CoordinatedBackingStoreProxy::createOrDestroyTiles(const IntRect& unscaledV
 
         for (const auto& position : tilePositionsToCreate) {
             auto tile = Tile(generateTileID(), position, tileRectForPosition(position));
+#if ENABLE(DAMAGE_TRACKING)
+            IntRect unscaledDirtyRect = tile.dirtyRect;
+            unscaledDirtyRect.scale(1 / contentsScale);
+            damage.add(unscaledDirtyRect);
+#else
+            UNUSED_PARAM(damage);
+#endif
             tilesToCreate.append(tile.id);
             m_tiles.add(position, WTF::move(tile));
         }
