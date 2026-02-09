@@ -76,6 +76,7 @@ struct _WebKitWebAudioSrcPrivate {
     GstPad* sourcePad;
 
     guint64 numberOfSamples;
+    bool runningTimeReset { false };
 
     GRefPtr<GstBufferPool> pool;
 
@@ -292,6 +293,11 @@ static void webKitWebAudioSrcRenderAndPushFrames(const GRefPtr<GstElement>& elem
         }
     }
 
+    if (priv->runningTimeReset) {
+        priv->runningTimeReset = false;
+        gst_pad_set_offset(priv->sourcePad, -timestamp);
+    }
+
     // Leak the buffer ref, because gst_app_src_push_buffer steals it.
     GstFlowReturn ret = gst_app_src_push_buffer(GST_APP_SRC(priv->source.get()), buffer.leakRef());
     if (ret != GST_FLOW_OK) {
@@ -394,6 +400,7 @@ static GstStateChangeReturn webKitWebAudioSrcChangeState(GstElement* element, Gs
         gst_buffer_pool_set_active(priv->pool.get(), FALSE);
         priv->pool = nullptr;
         priv->hasRenderedAudibleFrame = false;
+        priv->runningTimeReset = true;
         break;
     default:
         break;
