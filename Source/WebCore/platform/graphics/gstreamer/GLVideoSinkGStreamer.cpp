@@ -48,13 +48,22 @@ enum {
     WEBKIT_GL_VIDEO_SINK_PROP_LAST
 };
 
+GST_DEBUG_CATEGORY_STATIC(webkit_gl_video_sink_debug);
+#define GST_CAT_DEFAULT webkit_gl_video_sink_debug
+
 struct _WebKitGLVideoSinkPrivate {
+    ~_WebKitGLVideoSinkPrivate()
+    {
+        ASSERT(isMainThread());
+        if (mediaPlayerPrivate)
+            g_signal_handlers_disconnect_by_data(appSink.get(), mediaPlayerPrivate);
+
+        GST_DEBUG_OBJECT(appSink.get(), "WebKitGLVideoSink finalized.");
+    }
+
     GRefPtr<GstElement> appSink;
     MediaPlayerPrivateGStreamer* mediaPlayerPrivate;
 };
-
-GST_DEBUG_CATEGORY_STATIC(webkit_gl_video_sink_debug);
-#define GST_CAT_DEFAULT webkit_gl_video_sink_debug
 
 #define GST_GL_CAPS_FORMAT "{ A420, RGBx, RGBA, I420, Y444, YV12, Y41B, Y42B, NV12, NV21, VUYA }"
 static GstStaticPadTemplate glVideoSinkTemplate = GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS, GST_STATIC_CAPS_ANY);
@@ -141,21 +150,6 @@ static void webKitGLVideoSinkConstructed(GObject* object)
     gst_element_add_pad(GST_ELEMENT_CAST(sink), gst_ghost_pad_new("sink", pad.get()));
 }
 
-void webKitGLVideoSinkFinalize(GObject* object)
-{
-    ASSERT(isMainThread());
-
-    WebKitGLVideoSink* sink = WEBKIT_GL_VIDEO_SINK(object);
-    WebKitGLVideoSinkPrivate* priv = sink->priv;
-
-    if (priv->mediaPlayerPrivate)
-        g_signal_handlers_disconnect_by_data(priv->appSink.get(), priv->mediaPlayerPrivate);
-
-    GST_DEBUG_OBJECT(object, "WebKitGLVideoSink finalized.");
-
-    G_OBJECT_CLASS(webkit_gl_video_sink_parent_class)->finalize(object);
-}
-
 static GstStateChangeReturn webKitGLVideoSinkChangeState(GstElement* element, GstStateChange transition)
 {
     GST_DEBUG_OBJECT(element, "%s", gst_state_change_get_name(transition));
@@ -202,7 +196,6 @@ static void webkit_gl_video_sink_class_init(WebKitGLVideoSinkClass* klass)
     GstElementClass* elementClass = GST_ELEMENT_CLASS(klass);
 
     objectClass->constructed = webKitGLVideoSinkConstructed;
-    objectClass->finalize = webKitGLVideoSinkFinalize;
     objectClass->get_property = webKitGLVideoSinkGetProperty;
 
     gst_element_class_add_pad_template(elementClass, gst_static_pad_template_get(&glVideoSinkTemplate));
