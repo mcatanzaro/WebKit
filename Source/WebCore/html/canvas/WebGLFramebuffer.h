@@ -87,6 +87,9 @@ public:
     // Wrapper for drawBuffersEXT/drawBuffersARB to work around a driver bug.
     void drawBuffers(const Vector<GCGLenum>& bufs);
 
+    // Apply m_filteredDrawBuffers to GL state if pending sync is needed.
+    void applyFilteredDrawBuffers();
+
     GCGLenum getDrawBuffer(GCGLenum);
 
     void addMembersToOpaqueRoots(const AbstractLocker&, JSC::AbstractSlotVisitor&);
@@ -120,8 +123,8 @@ private:
     // Check if the framebuffer is currently bound to the given target.
     bool isBound(GCGLenum target) const;
 
-    // Check if a new drawBuffers call should be issued. This is called when we add or remove an attachment.
-    void drawBuffersIfNecessary(bool force);
+    // Update m_filteredDrawBuffers based on current attachments. Returns true if changed.
+    bool updateFilteredDrawBuffers(bool force);
 
     void setAttachmentInternal(GCGLenum attachment, AttachmentEntry);
     // If a given attachment point for the currently bound framebuffer is not
@@ -137,6 +140,7 @@ private:
     bool m_hasEverBeenBound { false };
     Vector<GCGLenum> m_drawBuffers;
     Vector<GCGLenum> m_filteredDrawBuffers;
+    bool m_drawBufferStatePendingSync { false };
 #if ENABLE(WEBXR)
     const bool m_isOpaque;
     bool m_insideWebXRRAF { false };

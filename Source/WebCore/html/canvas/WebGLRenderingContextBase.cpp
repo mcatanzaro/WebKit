@@ -5363,6 +5363,10 @@ void WebGLRenderingContextBase::setFramebuffer(const AbstractLocker&, GCGLenum t
         m_framebufferBinding = buffer;
     auto fbo = buffer ? buffer->object() : m_defaultFramebuffer->object();
     graphicsContextGL()->bindFramebuffer(target, fbo);
+
+    // Apply deferred draw buffer state when binding for drawing.
+    if (buffer && (target == GraphicsContextGL::FRAMEBUFFER || target == GraphicsContextGL::DRAW_FRAMEBUFFER))
+        buffer->applyFilteredDrawBuffers();
 }
 
 bool WebGLRenderingContextBase::supportsDrawBuffers()
