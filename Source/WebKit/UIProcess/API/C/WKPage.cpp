@@ -3527,3 +3527,10 @@ void WKPageClearBackForwardCache(WKPageRef page)
     RefPtr protectedPage = toProtectedImpl(page);
     protectedPage->protectedBackForwardCache()->removeEntriesForPage(*protectedPage);
 }
+
+void WKPageDoAfterProcessingAllPendingMouseEvents(WKPageRef page, void* context, WKPageDoAfterProcessingAllPendingMouseEventsFunction completionHandler)
+{
+    toProtectedImpl(page)->doAfterProcessingAllPendingMouseEvents([context, completionHandler] {
+        completionHandler(context);
+    });
+}

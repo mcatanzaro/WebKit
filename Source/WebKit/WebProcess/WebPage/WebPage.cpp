@@ -3671,7 +3671,7 @@ void WebPage::mouseEvent(FrameIdentifier frameID, const WebMouseEvent& mouseEven
 
     flushDeferredDidReceiveMouseEvent();
 
-    if (shouldDeferDidReceiveEvent && drawingArea->scheduleRenderingUpdate()) {
+    if (shouldDeferDidReceiveEvent) {
         // For mousemove events where the user is only hovering (not clicking and dragging),
         // we defer sending the DidReceiveEvent() IPC message until the end of the rendering
         // update to throttle the rate of these events to the rendering update frequency.
@@ -3679,6 +3679,7 @@ void WebPage::mouseEvent(FrameIdentifier frameID, const WebMouseEvent& mouseEven
         // coalesces mousemove events until the DidReceiveEvent() message is received after
         // the rendering update.
         m_deferredDidReceiveMouseEvent = { { mouseEvent.type(), handled } };
+        protectedCorePage()->scheduleRenderingUpdate({ });
         return;
     }
 
