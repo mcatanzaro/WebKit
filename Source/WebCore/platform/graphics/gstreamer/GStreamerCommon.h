@@ -93,7 +93,7 @@ bool isProtocolAllowed(const WTF::URL&);
 CStringView capsMediaType(const GstCaps*);
 std::optional<TrackID> getStreamIdFromPad(const GRefPtr<GstPad>&);
 std::optional<TrackID> getStreamIdFromStream(const GRefPtr<GstStream>&);
-std::optional<TrackID> parseStreamId(const String& stringId);
+TrackID parseStreamId(const String& stringId);
 bool doCapsHaveType(const GstCaps*, ASCIILiteral);
 bool areEncryptedCaps(const GstCaps*);
 Vector<String> extractGStreamerOptionsFromCommandLine();

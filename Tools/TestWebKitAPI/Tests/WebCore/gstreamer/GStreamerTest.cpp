@@ -119,7 +119,6 @@ TEST_F(GStreamerTest, streamIdParsing)
     ASSERT_EQ(parseStreamId("bec5903f-df6d-4773-85bb-05be65fc1bb8"_s), 0x85bb05be65fc1bb8);
     ASSERT_EQ(parseStreamId("647a4b9b3856ef43869870dc9e8b490e7c76512c47f9cfa7e9cf236fb9d9693d/001"_s), 1);
     ASSERT_EQ(parseStreamId("123"_s), 123);
-    ASSERT_TRUE(!parseStreamId("foo"_s).has_value());
 }
 
 TEST_F(GStreamerTest, hevcProfileParsing)
