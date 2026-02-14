@@ -4,8 +4,8 @@ layer at (0,0) size 800x573
   RenderBlock {HTML} at (0,0) size 800x573
     RenderBody {BODY} at (8,21) size 784x536
       RenderBlock {H1} at (0,0) size 784x38
-        RenderText {#text} at (0,1) size 538x36
-          text run at (0,1) width 538: "Bidirectional Text Test 2 - CSS"
+        RenderText {#text} at (0,1) size 476x36
+          text run at (0,1) width 476: "Bidirectional Text Test 2 - CSS"
       RenderBlock {P} at (0,59) size 784x20
         RenderText {#text} at (0,1) size 167x17
           text run at (0,1) width 167: "This test is based on "
