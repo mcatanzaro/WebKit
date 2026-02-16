@@ -1002,7 +1002,6 @@ perf/htmlcollection-backwards-iteration.html [ Pass Failure ]
 webkit.org/b/261024 fast/events/remove-child-onscroll.html [ Pass Timeout ]
 webkit.org/b/261024 fast/multicol/pagination/RightToLeft-rl-hittest.html [ Failure Pass ]
 webkit.org/b/261024 http/tests/frame-throttling/raf-throttle-in-cross-origin-subframe.html [ Failure ]
-webkit.org/b/261024 http/tests/notifications/notification.html [ Crash Pass ]
 webkit.org/b/261024 imported/w3c/web-platform-tests/encrypted-media/clearkey-mp4-playback-temporary-encrypted-clear-sources.https.html [ Crash Failure Pass ]
 webkit.org/b/261024 js/cached-window-properties.html [ Pass Timeout ]
 
