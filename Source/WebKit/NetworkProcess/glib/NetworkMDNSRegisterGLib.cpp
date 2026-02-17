@@ -110,7 +110,8 @@ void NetworkMDNSRegister::registerMDNSName(WebCore::ScriptExecutionContextIdenti
         GUniqueOutPtr<char> objectPath;
         g_variant_get(variant.get(), "(o)", &objectPath.outPtr());
 
-        g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE, nullptr, "org.freedesktop.Avahi", objectPath.get(), "org.freedesktop.Avahi.EntryGroup", request->cancellable.get(), [](GObject*, GAsyncResult* result, gpointer userData) {
+        auto* cancellable = request->cancellable.get();
+        g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE, nullptr, "org.freedesktop.Avahi", objectPath.get(), "org.freedesktop.Avahi.EntryGroup", cancellable, [](GObject*, GAsyncResult* result, gpointer userData) {
             std::unique_ptr<PendingRegistrationRequest> request;
             request.reset(reinterpret_cast<PendingRegistrationRequest*>(userData));
 
@@ -128,7 +129,10 @@ void NetworkMDNSRegister::registerMDNSName(WebCore::ScriptExecutionContextIdenti
             int protocol = -1;
             uint32_t flags = 16; // AVAHI_PUBLISH_NO_REVERSE
 
-            g_dbus_proxy_call(dbusProxy.get(), "AddAddress", g_variant_new("(iiuss)", interface, protocol, flags, request->name.ascii().data(), request->address.ascii().data()), G_DBUS_CALL_FLAGS_NONE, -1, request->cancellable.get(), [](GObject* object, GAsyncResult* result, gpointer userData) {
+            auto* cancellable = request->cancellable.get();
+            auto requestName = request->name.ascii();
+            auto requestAddress = request->address.ascii();
+            g_dbus_proxy_call(dbusProxy.get(), "AddAddress", g_variant_new("(iiuss)", interface, protocol, flags, requestName.data(), requestAddress.data()), G_DBUS_CALL_FLAGS_NONE, -1, cancellable, [](GObject* object, GAsyncResult* result, gpointer userData) {
                 std::unique_ptr<PendingRegistrationRequest> request;
                 request.reset(reinterpret_cast<PendingRegistrationRequest*>(userData));
 
@@ -142,7 +146,8 @@ void NetworkMDNSRegister::registerMDNSName(WebCore::ScriptExecutionContextIdenti
                     return;
                 }
 
-                g_dbus_proxy_call(proxy, "Commit", g_variant_new("()"), G_DBUS_CALL_FLAGS_NONE, -1, request->cancellable.get(), [](GObject* object, GAsyncResult* result, gpointer userData) {
+                auto* cancellable = request->cancellable.get();
+                g_dbus_proxy_call(proxy, "Commit", g_variant_new("()"), G_DBUS_CALL_FLAGS_NONE, -1, cancellable, [](GObject* object, GAsyncResult* result, gpointer userData) {
                     std::unique_ptr<PendingRegistrationRequest> request;
                     request.reset(reinterpret_cast<PendingRegistrationRequest*>(userData));
 
