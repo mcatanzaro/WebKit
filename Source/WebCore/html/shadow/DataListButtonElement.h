@@ -45,17 +45,19 @@ public:
 
     static Ref<DataListButtonElement> create(Document&, DataListButtonOwner&);
 
-    bool canAdjustStyleForAppearance() const;
+    bool canAdjustStyleForAppearance() const { return m_canAdjustStyleForAppearance; }
 
 private:
     explicit DataListButtonElement(Document&, DataListButtonOwner&);
 
-    bool isDataListButtonElement() const override { return true; }
+    bool isDataListButtonElement() const final { return true; }
+    std::optional<Style::UnadjustedStyle> resolveCustomStyle(const Style::ResolutionContext&, const RenderStyle* shadowHostStyle) final;
 
     void defaultEventHandler(Event&) override;
     bool isDisabledFormControl() const override;
 
     DataListButtonOwner& m_owner;
+    bool m_canAdjustStyleForAppearance { true };
 };
 
 } // namespace WebCore
