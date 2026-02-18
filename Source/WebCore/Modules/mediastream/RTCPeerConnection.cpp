@@ -991,6 +991,8 @@ void RTCPeerConnection::updateNegotiationNeededFlag(std::optional<uint32_t> even
 void RTCPeerConnection::scheduleEvent(Ref<Event>&& event)
 {
     queueTaskKeepingObjectAlive(*this, TaskSource::Networking, [event = WTF::move(event)](auto& connection) mutable {
+        if (connection.isClosed())
+            return;
         connection.dispatchEvent(event);
     });
 }
