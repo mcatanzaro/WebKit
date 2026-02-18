@@ -252,7 +252,12 @@ void ThreadedCompositor::flushCompositingState(const OptionSet<CompositionReason
     if (reasons.hasExactlyOneBitSet() && reasons.contains(CompositionReason::Animation))
         return;
 
-    ASSERT(!reasons.contains(CompositionReason::RenderingUpdate) || !m_sceneState->pendingTiles());
+#if ASSERT_ENABLED
+    {
+        Locker locker { m_state.lock };
+        ASSERT(!reasons.contains(CompositionReason::RenderingUpdate) || !m_state.isWaitingForTiles);
+    }
+#endif
     m_sceneState->rootLayer().flushCompositingState(reasons, *m_textureMapper);
     for (auto& layer : m_sceneState->committedLayers())
         layer->flushCompositingState(reasons, *m_textureMapper);
