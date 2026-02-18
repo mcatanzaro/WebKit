@@ -92,7 +92,7 @@ TrackPrivateBaseGStreamer::TrackPrivateBaseGStreamer(TrackType type, TrackPrivat
     : m_notifier(MainThreadNotifier<MainThreadNotification>::create())
     , m_index(index)
     , m_gstStreamId(byteCast<Latin1Character>(unsafeSpan(gst_stream_get_stream_id(stream))))
-    , m_id(parseStreamId(m_gstStreamId))
+    , m_id(parseStreamId(m_gstStreamId).value_or(index))
     , m_stream(stream)
     , m_type(type)
     , m_owner(owner)
@@ -119,7 +119,7 @@ void TrackPrivateBaseGStreamer::setPad(GRefPtr<GstPad>&& pad)
     m_gstStreamId = byteCast<Latin1Character>(unsafeSpan(gst_pad_get_stream_id(m_pad.get())));
 
     if (m_shouldUsePadStreamId)
-        m_id = parseStreamId(m_gstStreamId);
+        m_id = parseStreamId(m_gstStreamId).value_or(m_index);
 
     if (!m_bestUpstreamPad)
         return;
@@ -285,10 +285,14 @@ void TrackPrivateBaseGStreamer::notifyTrackOfStreamChanged()
     if (!m_pad)
         return;
 
-    ASSERT(isMainThread());
-    m_gstStreamId = byteCast<Latin1Character>(unsafeSpan(gst_pad_get_stream_id(m_pad.get())));
-    m_id = parseStreamId(m_gstStreamId);
+    String gstStreamId = byteCast<Latin1Character>(unsafeSpan(gst_pad_get_stream_id(m_pad.get())));
+    auto streamId = parseStreamId(gstStreamId);
+    if (!streamId)
+        return;
 
+    ASSERT(isMainThread());
+    m_gstStreamId = gstStreamId;
+    m_id = streamId.value();
     GST_INFO("Track %" PRIu64 " got stream start. GStreamer stream-id: %s", m_id, m_gstStreamId.utf8().data());
 }
 
@@ -311,7 +315,7 @@ void TrackPrivateBaseGStreamer::installUpdateConfigurationHandlers()
                 return;
 
             track->m_taskQueue.enqueueTask([track, caps = WTF::move(caps)]() mutable {
-                track->capsChanged(track->m_id, WTF::move(caps));
+                track->capsChanged(getStreamIdFromPad(track->m_pad.get()).value_or(track->m_index), WTF::move(caps));
             });
         }), this);
         g_signal_connect_swapped(m_pad.get(), "notify::tags", G_CALLBACK(+[](TrackPrivateBaseGStreamer* track) {
@@ -325,7 +329,7 @@ void TrackPrivateBaseGStreamer::installUpdateConfigurationHandlers()
         g_signal_connect_swapped(m_stream.get(), "notify::caps", G_CALLBACK(+[](TrackPrivateBaseGStreamer* track) {
             track->m_taskQueue.enqueueTask([track]() {
                 auto caps = adoptGRef(gst_stream_get_caps(track->m_stream.get()));
-                track->capsChanged(track->m_id, WTF::move(caps));
+                track->capsChanged(getStreamIdFromStream(track->m_stream.get()).value_or(track->m_index), WTF::move(caps));
             });
         }), this);
 

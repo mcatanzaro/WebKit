@@ -1264,14 +1264,11 @@ void MediaPlayerPrivateGStreamer::notifyPlayerOfTrack()
         if (!pad)
             continue;
 
-        std::optional<TrackID> streamId(getStreamIdFromPad(pad));
-        ASSERT(streamId);
-        if (!streamId)
-            continue;
-        validStreams.append(streamId.value());
+        TrackID streamId(getStreamIdFromPad(pad).value_or(i));
+        validStreams.append(streamId);
 
         if (i < tracks.size()) {
-            RefPtr<TrackPrivateType> existingTrack = tracks.get(streamId.value());
+            RefPtr<TrackPrivateType> existingTrack = tracks.get(streamId);
             if (existingTrack) {
                 ASSERT(existingTrack->index() == i);
                 // TODO: Position of index should remain the same on replay.

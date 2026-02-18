@@ -315,25 +315,33 @@ std::optional<TrackID> getStreamIdFromPad(const GRefPtr<GstPad>& pad)
 {
     auto streamIdAsString = GMallocString::unsafeAdoptFromUTF8(gst_pad_get_stream_id(pad.get()));
     if (!streamIdAsString) {
-        GST_WARNING_OBJECT(pad.get(), "Failed to get stream-id from pad");
+        GST_DEBUG_OBJECT(pad.get(), "Failed to get stream-id from pad");
         return std::nullopt;
     }
 
-    return parseStreamId(streamIdAsString.span());
+    std::optional<TrackID> streamId(parseStreamId(streamIdAsString.span()));
+    if (!streamId)
+        GST_WARNING_OBJECT(pad.get(), "Got invalid stream-id from pad: %s", streamIdAsString.utf8());
+
+    return streamId;
 }
 
 std::optional<TrackID> getStreamIdFromStream(const GRefPtr<GstStream>& stream)
 {
     auto streamIdAsString = CStringView::unsafeFromUTF8(gst_stream_get_stream_id(stream.get()));
     if (!streamIdAsString) {
-        GST_WARNING_OBJECT(stream.get(), "Failed to get stream-id from stream");
+        GST_DEBUG_OBJECT(stream.get(), "Failed to get stream-id from stream");
         return std::nullopt;
     }
 
-    return parseStreamId(streamIdAsString.span());
+    std::optional<TrackID> streamId(parseStreamId(streamIdAsString.span()));
+    if (!streamId)
+        GST_WARNING_OBJECT(stream.get(), "Got invalid stream-id from stream: %s", streamIdAsString.utf8());
+
+    return streamId;
 }
 
-TrackID parseStreamId(const String& stringId)
+std::optional<TrackID> parseStreamId(const String& stringId)
 {
     auto maybeUUID = WTF::UUID::parse(stringId);
     if (maybeUUID.has_value())
@@ -343,13 +351,10 @@ TrackID parseStreamId(const String& stringId)
     // however this is the format qtdemux uses for stream-id creation,
     // so we can reasonably rely on it.
     size_t position = stringId.find('/');
-    std::optional<TrackID> result;
-    if (position != notFound && position + 1 < stringId.length())
-        result = parseIntegerAllowingTrailingJunk<TrackID>(stringId.substring(position + 1));
-    else
-        result = parseIntegerAllowingTrailingJunk<TrackID>(stringId);
+    if (position == notFound || position + 1 == stringId.length())
+        return parseIntegerAllowingTrailingJunk<TrackID>(stringId);
 
-    return result.value_or(stringId.hash());
+    return parseIntegerAllowingTrailingJunk<TrackID>(stringId.substring(position + 1));
 }
 
 CStringView capsMediaType(const GstCaps* caps)
