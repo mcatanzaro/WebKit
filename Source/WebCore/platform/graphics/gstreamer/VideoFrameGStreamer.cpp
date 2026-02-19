@@ -38,9 +38,13 @@
 #include <JavaScriptCore/JSCInlines.h>
 #include <JavaScriptCore/TypedArrayInlines.h>
 
-#if USE(GBM) && GST_CHECK_VERSION(1, 24, 0)
+#if USE(GBM)
+#if GST_CHECK_VERSION(1, 24, 0)
 #include <gst/video/video-info-dma.h>
-#endif
+#else
+#include <drm_fourcc.h>
+#endif // GST_CHECK_VERSION(1, 24, 0)
+#endif // USE(GBM)
 
 #if USE(GSTREAMER_GL)
 #include <gst/allocators/gstdmabuf.h>
@@ -71,13 +75,54 @@ static void ensureVideoFrameDebugCategoryInitialized()
     });
 }
 
+#if USE(GBM) && !GST_CHECK_VERSION(1, 24, 0)
+static std::optional<uint32_t> videoFormatToDRMFourcc(GstVideoFormat format)
+{
+    switch (format) {
+    case GST_VIDEO_FORMAT_BGRx:
+        return DRM_FORMAT_XRGB8888;
+    case GST_VIDEO_FORMAT_RGBx:
+        return DRM_FORMAT_XBGR8888;
+    case GST_VIDEO_FORMAT_BGRA:
+        return DRM_FORMAT_ARGB8888;
+    case GST_VIDEO_FORMAT_RGBA:
+        return DRM_FORMAT_ABGR8888;
+    case GST_VIDEO_FORMAT_I420:
+        return DRM_FORMAT_YUV420;
+    case GST_VIDEO_FORMAT_YV12:
+        return DRM_FORMAT_YVU420;
+    case GST_VIDEO_FORMAT_NV12:
+        return DRM_FORMAT_NV12;
+    case GST_VIDEO_FORMAT_NV21:
+        return DRM_FORMAT_NV21;
+    case GST_VIDEO_FORMAT_Y444:
+        return DRM_FORMAT_YUV444;
+    case GST_VIDEO_FORMAT_Y41B:
+        return DRM_FORMAT_YUV411;
+    case GST_VIDEO_FORMAT_Y42B:
+        return DRM_FORMAT_YUV422;
+    case GST_VIDEO_FORMAT_P010_10LE:
+        return DRM_FORMAT_P010;
+    case GST_VIDEO_FORMAT_ENCODED:
+        return std::nullopt;
+    default:
+        break;
+    }
+
+    ASSERT_NOT_REACHED_WITH_MESSAGE("Un-handled video format: %s", gst_video_format_to_string(format));
+    GST_ERROR("Un-handled video format: %s", gst_video_format_to_string(format));
+    return std::nullopt;
+}
+#endif // USE(GBM) && !GST_CHECK_VERSION(1, 24, 0)
+
 VideoFrameGStreamer::Info VideoFrameGStreamer::infoFromCaps(const GRefPtr<GstCaps>& caps)
 {
     GstVideoInfo videoInfo;
     gst_video_info_from_caps(&videoInfo, caps.get());
 
     std::optional<DMABufFormat> dmabufFormat;
-#if USE(GBM) && GST_CHECK_VERSION(1, 24, 0)
+#if USE(GBM)
+#if GST_CHECK_VERSION(1, 24, 0)
     if (gst_video_is_dma_drm_caps(caps.get())) {
         GstVideoInfoDmaDrm drmVideoInfo;
         if (!gst_video_info_dma_drm_from_caps(&drmVideoInfo, caps.get()))
@@ -88,7 +133,11 @@ VideoFrameGStreamer::Info VideoFrameGStreamer::infoFromCaps(const GRefPtr<GstCap
 
         dmabufFormat = { drmVideoInfo.drm_fourcc, drmVideoInfo.drm_modifier };
     }
-#endif
+#else
+    if (auto fourccFromFormat = videoFormatToDRMFourcc(GST_VIDEO_INFO_FORMAT(&videoInfo)))
+        dmabufFormat = { *fourccFromFormat, DRM_FORMAT_MOD_INVALID };
+#endif // GST_CHECK_VERSION(1, 24, 0)
+#endif // USE(GBM)
     return { videoInfo, dmabufFormat };
 }
 
