@@ -284,7 +284,9 @@ public:
     virtual void delaySamples(Seconds) { };
     virtual void setInterruptedForTesting(bool);
 
-    virtual bool setShouldApplyRotation();
+    virtual void setShouldApplyRotation();
+    bool isApplyingRotation() const;
+
     virtual void setIsInBackground(bool);
 
     std::optional<PageIdentifier> pageIdentifier() const { return m_pageIdentifier.asOptional(); }
@@ -423,7 +425,7 @@ private:
     bool m_captureDidFailed { false };
     bool m_isEnded { false };
     bool m_hasStartedProducingData { false };
-    std::atomic<bool> m_shouldApplyRotation { false };
+    std::atomic<bool> m_isApplyingRotation { false };
 
     unsigned m_videoFrameObserversWithAdaptors { 0 };
 };

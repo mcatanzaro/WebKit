@@ -67,7 +67,7 @@ RealtimeOutgoingVideoSourceCocoa::~RealtimeOutgoingVideoSourceCocoa() = default;
 
 void RealtimeOutgoingVideoSourceCocoa::videoFrameAvailable(VideoFrame& videoFrame, VideoFrameTimeMetadata)
 {
-    ASSERT(!m_shouldApplyRotation);
+    ASSERT(!m_isApplyingRotation);
 
 #if !RELEASE_LOG_DISABLED
     if (!(++m_numberOfFrames % 60))
@@ -90,8 +90,8 @@ void RealtimeOutgoingVideoSourceCocoa::videoFrameAvailable(VideoFrame& videoFram
     }
 
     auto videoFrameScaling = this->videoFrameScaling();
-    bool shouldApplyRotation = m_shouldApplyRotation && m_currentRotation != webrtc::kVideoRotation_0;
-    if (!shouldApplyRotation) {
+    bool isApplyingRotation = m_isApplyingRotation && m_currentRotation != webrtc::kVideoRotation_0;
+    if (!isApplyingRotation) {
         if (videoFrame.isRemoteProxy()) {
             Ref remoteVideoFrame { videoFrame };
             auto size = videoFrame.presentationSize();
@@ -117,7 +117,7 @@ void RealtimeOutgoingVideoSourceCocoa::videoFrameAvailable(VideoFrame& videoFram
 #endif
 
     RefPtr<VideoFrame> rotatedVideoFrame;
-    if (shouldApplyRotation) {
+    if (isApplyingRotation) {
         if (!m_rotationSession)
             m_rotationSession = makeUnique<ImageRotationSessionVT>(ImageRotationSessionVT::ShouldUseIOSurface::No);
         rotatedVideoFrame = m_rotationSession->applyRotation(videoFrame);

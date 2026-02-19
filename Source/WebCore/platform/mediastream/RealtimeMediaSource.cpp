@@ -343,7 +343,7 @@ void RealtimeMediaSource::videoFrameAvailable(VideoFrame& videoFrame, VideoFrame
     bool shouldSwapAdaptorSize = false;
     Ref currentVideoFrame = [&] -> Ref<VideoFrame> {
 #if PLATFORM(COCOA)
-        if (!m_shouldApplyRotation || videoFrame.hasNoTransformation())
+        if (!m_isApplyingRotation || videoFrame.hasNoTransformation())
             return videoFrame;
 
         if (!m_rotationSession)
@@ -1537,16 +1537,18 @@ void RealtimeMediaSource::configurationChanged()
     });
 }
 
-bool RealtimeMediaSource::setShouldApplyRotation()
+void RealtimeMediaSource::setShouldApplyRotation()
 {
     ASSERT(isMainThread());
 
 #if PLATFORM(COCOA)
-    m_shouldApplyRotation = true;
-    return true;
-#else
-    return false;
+    m_isApplyingRotation = true;
 #endif
+}
+
+bool RealtimeMediaSource::isApplyingRotation() const
+{
+    return m_isApplyingRotation;
 }
 
 #if !RELEASE_LOG_DISABLED

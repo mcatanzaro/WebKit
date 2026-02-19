@@ -58,10 +58,9 @@ RemoteRealtimeVideoSource::RemoteRealtimeVideoSource(RemoteRealtimeMediaSourcePr
 
 RemoteRealtimeVideoSource::~RemoteRealtimeVideoSource() = default;
 
-bool RemoteRealtimeVideoSource::setShouldApplyRotation()
+void RemoteRealtimeVideoSource::setShouldApplyRotation()
 {
     Ref { connection() }->send(Messages::UserMediaCaptureManagerProxy::SetShouldApplyRotation { identifier() }, 0);
-    return true;
 }
 
 Ref<RealtimeMediaSource> RemoteRealtimeVideoSource::clone()
