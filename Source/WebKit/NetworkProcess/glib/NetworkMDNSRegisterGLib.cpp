@@ -46,10 +46,12 @@ NetworkMDNSRegister::NetworkMDNSRegister(NetworkConnectionToWebProcess& connecti
     m_cancellable = adoptGRef(g_cancellable_new());
     g_dbus_proxy_new_for_bus(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE, nullptr, "org.freedesktop.Avahi", "/", "org.freedesktop.Avahi.Server", m_cancellable.get(), [](GObject*, GAsyncResult* result, gpointer userData) {
         GUniqueOutPtr<GError> error;
-        auto self = reinterpret_cast<NetworkMDNSRegister*>(userData);
-        self->m_dbusProxy = adoptGRef(g_dbus_proxy_new_for_bus_finish(result, &error.outPtr()));
-        if (!error)
+        auto proxy = adoptGRef(g_dbus_proxy_new_for_bus_finish(result, &error.outPtr()));
+        if (!error) {
+            auto self = static_cast<NetworkMDNSRegister*>(userData);
+            self->m_dbusProxy = WTF::move(proxy);
             return;
+        }
 
 #if PLATFORM(GTK)
         // Check if the connection to the system bus was refused, don't log an error when that
