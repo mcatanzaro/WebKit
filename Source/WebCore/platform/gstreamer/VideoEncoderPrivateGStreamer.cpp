@@ -332,12 +332,12 @@ static bool videoEncoderSetEncoder(WebKitVideoEncoder* self, EncoderId encoderId
     GRefPtr<GstElement> videoFlip;
     if (priv->enableVideoFlip) {
         videoFlip = makeGStreamerElement("autovideoflip"_s);
-        if (!videoFlip)
-            return false;
-
-        gst_util_set_object_arg(G_OBJECT(videoFlip.get()), "video-direction", "auto");
-        gst_bin_add(bin, videoFlip.get());
-        gst_element_link(videoFlip.get(), videoConvert.get());
+        if (videoFlip) {
+            gst_util_set_object_arg(G_OBJECT(videoFlip.get()), "video-direction", "auto");
+            gst_bin_add(bin, videoFlip.get());
+            gst_element_link(videoFlip.get(), videoConvert.get());
+        } else
+            GST_WARNING_OBJECT(self, "The autovideoflip element is missing, video rotation handling cannot be enabled.");
     }
 
     const auto& element = videoFlip ? videoFlip : videoConvert;
