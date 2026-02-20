@@ -35,8 +35,8 @@ public:
     template<typename... Arguments>
     SVGAnimationAdditiveListFunction(AnimationMode animationMode, CalcMode calcMode, bool isAccumulated, bool isAdditive, Arguments&&... arguments)
         : SVGAnimationAdditiveFunction(animationMode, calcMode, isAccumulated, isAdditive)
-        , m_from(ListType::create(std::forward<Arguments>(arguments)...))
-        , m_to(ListType::create(std::forward<Arguments>(arguments)...))
+        , m_from(ListType::create(arguments...))
+        , m_to(ListType::create(arguments...))
         , m_toAtEndOfDuration(ListType::create(std::forward<Arguments>(arguments)...))
     {
     }
