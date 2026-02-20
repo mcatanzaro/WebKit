@@ -6132,8 +6132,12 @@ PerElementSpeakerSelectionEnabled:
   defaultValue:
     WebKit:
       "PLATFORM(COCOA)": true
+      "PLATFORM(WPE)": true
+      "PLATFORM(GTK)": true
       default: false
     WebCore:
+      "PLATFORM(WPE)": true
+      "PLATFORM(GTK)": true
       default: false
 
 PermissionsAPIEnabled:
