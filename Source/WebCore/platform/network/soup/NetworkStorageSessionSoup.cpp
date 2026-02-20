@@ -770,6 +770,8 @@ Vector<Cookie> NetworkStorageSession::domCookiesForHost(const URL& url)
     Vector<Cookie> cookies;
     for (GSList* iter = soupCookies.get(); iter; iter = g_slist_next(iter)) {
         auto* soupCookie = static_cast<SoupCookie*>(iter->data);
+        if (soup_cookie_get_http_only(soupCookie))
+            continue;
         if (soup_cookie_domain_matches(soupCookie, host.data())) {
             // soup_cookie_jar_all_cookies() always returns a reversed list.
             cookies.insert(0, Cookie(soupCookie));
