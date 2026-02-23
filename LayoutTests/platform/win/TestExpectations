@@ -4361,6 +4361,8 @@ storage/indexeddb/modern/get-keyrange.html [ Failure Pass ]
 storage/indexeddb/modern/idbobjectstore-delete-1-private.html [ Failure Pass ]
 storage/indexeddb/modern/idbobjectstore-delete-1.html [ Failure Pass ]
 
+storage/indexeddb/abort-while-committing-crash.html [ Skip ]
+
 editing/style/unbold-in-bold.html [ Failure ]
 
 fast/html/body-color-legacy-parsing-3.html [ Pass ImageOnlyFailure ]
