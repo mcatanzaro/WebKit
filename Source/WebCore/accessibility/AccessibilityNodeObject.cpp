@@ -3814,8 +3814,15 @@ String AccessibilityNodeObject::textUnderElement(TextUnderElementMode mode) cons
     if (auto* text = dynamicDowncast<Text>(node.get()))
         return !mode.isHidden() ? text->data() : emptyString();
 
-    CheckedPtr style = this->style();
-    mode.inHiddenSubtree = WebCore::isRenderHidden(style.get());
+    bool isDisplayNone = false;
+    if (CheckedPtr style = this->style()) {
+        isDisplayNone = style->display() == DisplayType::None;
+        mode.inHiddenSubtree = WebCore::isRenderHidden(*style);
+    } else {
+        // If there is no style for something, assume it's hidden.
+        mode.inHiddenSubtree = true;
+    }
+
     // The Accname specification states that if the current node is hidden, and not directly
     // referenced by aria-labelledby or aria-describedby, and is not a host language text
     // alternative, the empty string should be returned.
@@ -3829,7 +3836,7 @@ String AccessibilityNodeObject::textUnderElement(TextUnderElementMode mode) cons
             // agents MUST include all nodes in the subtree as part of the accessible name or accessible
             // description, when the node referenced by aria-labelledby or aria-describedby is hidden."
             mode.considerHiddenState = false;
-        } else if (style && style->display() == DisplayType::None) {
+        } else if (isDisplayNone) {
             // Unlike visibility:visible + visiblity:visible where the latter can override the former in a subtree,
             // display:none guarantees nothing within will be rendered, so we can exit early.
             return { };
