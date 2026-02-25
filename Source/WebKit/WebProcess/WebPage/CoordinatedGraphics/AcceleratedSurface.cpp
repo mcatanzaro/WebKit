@@ -831,22 +831,29 @@ AcceleratedSurface::RenderTarget* AcceleratedSurface::SwapChain::nextTarget()
     if (m_freeTargets.isEmpty()) {
         ASSERT(m_lockedTargets.size() < s_maximumBuffers);
 
-        if (m_lockedTargets.isEmpty()) [[unlikely]] {
-            // Initial setup.
-#if ENABLE(WPE_PLATFORM)
-            WebProcess::singleton().parentProcessConnection()->send(Messages::AcceleratedBackingStore::DidChangeBufferConfiguration(s_initialBuffers), m_surfaceID);
-#endif
-            for (unsigned i = 0; i < s_initialBuffers; ++i)
-                m_freeTargets.append(createTarget());
-        } else {
-            // Additional buffers creted on demand.
-#if ENABLE(WPE_PLATFORM)
-            WebProcess::singleton().parentProcessConnection()->send(Messages::AcceleratedBackingStore::DidChangeBufferConfiguration(m_lockedTargets.size() + 1), m_surfaceID);
-#endif
-            m_lockedTargets.insert(0, createTarget());
-            return m_lockedTargets[0].get();
+        unsigned targetsToCreate = 1;
+        if (!m_initialTargetsCreated) {
+            targetsToCreate = s_initialBuffers;
+            m_initialTargetsCreated = true;
         }
+
+#if ENABLE(WPE_PLATFORM)
+        WebProcess::singleton().parentProcessConnection()->send(Messages::AcceleratedBackingStore::DidChangeBufferConfiguration(m_lockedTargets.size() + targetsToCreate), m_surfaceID);
+#endif
+
+        for (unsigned i = 0; i < targetsToCreate; ++i) {
+            if (auto target = createTarget())
+                m_freeTargets.append(WTF::move(target));
+        }
+
+#if ENABLE(WPE_PLATFORM)
+        if (m_freeTargets.size() != targetsToCreate)
+            WebProcess::singleton().parentProcessConnection()->send(Messages::AcceleratedBackingStore::DidChangeBufferConfiguration(m_lockedTargets.size() + m_freeTargets.size()), m_surfaceID);
+#endif
     }
+
+    if (m_freeTargets.isEmpty())
+        return nullptr;
 
     auto target = m_freeTargets.takeLast();
     m_lockedTargets.insert(0, WTF::move(target));
@@ -877,6 +884,7 @@ void AcceleratedSurface::SwapChain::reset()
 
     m_lockedTargets.clear();
     m_freeTargets.clear();
+    m_initialTargetsCreated = false;
 }
 
 void AcceleratedSurface::SwapChain::releaseUnusedBuffers()
@@ -1090,8 +1098,8 @@ void AcceleratedSurface::setFrameDamage(Damage&& damage)
 const std::optional<Damage>& AcceleratedSurface::renderTargetDamage()
 {
     m_swapChain.addDamage(m_frameDamage);
-    ASSERT(m_target);
-    return m_target->damage();
+    static std::optional<Damage> nulloptDamage;
+    return m_target ? m_target->damage() : nulloptDamage;
 }
 #endif
 

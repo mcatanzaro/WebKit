@@ -369,6 +369,7 @@ private:
         WebCore::IntSize m_size;
         Vector<std::unique_ptr<RenderTarget>, s_maximumBuffers> m_freeTargets;
         Vector<std::unique_ptr<RenderTarget>, s_maximumBuffers> m_lockedTargets;
+        bool m_initialTargetsCreated { false };
 #if (PLATFORM(GTK) || ENABLE(WPE_PLATFORM)) && (USE(GBM) || OS(ANDROID))
         Lock m_bufferFormatLock;
         BufferFormat m_bufferFormat WTF_GUARDED_BY_LOCK(m_bufferFormatLock);
