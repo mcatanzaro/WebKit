@@ -1264,7 +1264,7 @@ static void webkitMediaStreamSrcEnsureStreamCollectionPosted(WebKitMediaStreamSr
 struct ProbeData {
     GThreadSafeWeakPtr<GstElement> element;
     RealtimeMediaSource::Type sourceType;
-    GRefPtr<GstEvent> streamStartEvent;
+    GRefPtr<GstStream> stream;
     GRefPtr<GstStreamCollection> collection;
 };
 WEBKIT_DEFINE_ASYNC_DATA_STRUCT(ProbeData);
@@ -1281,16 +1281,17 @@ static GstPadProbeReturn webkitMediaStreamSrcPadProbeCb(GstPad* pad, GstPadProbe
     GST_DEBUG_OBJECT(self, "Event %" GST_PTR_FORMAT, event);
     switch (GST_EVENT_TYPE(event)) {
     case GST_EVENT_STREAM_START: {
-        if (data->streamStartEvent) {
-            GST_DEBUG_OBJECT(self, "Replacing stream-start event");
-            auto sequenceNumber = gst_event_get_seqnum(event);
-            gst_event_unref(event);
-            IGNORE_WARNINGS_BEGIN("cast-align")
-            data->streamStartEvent = adoptGRef(gst_event_make_writable(data->streamStartEvent.leakRef()));
-            IGNORE_WARNINGS_END
-            gst_event_set_seqnum(data->streamStartEvent.get(), sequenceNumber);
-            info->data = data->streamStartEvent.ref();
-        }
+        if (!data->stream) [[unlikely]]
+            return GST_PAD_PROBE_OK;
+
+        GST_DEBUG_OBJECT(self, "Replacing stream-start event");
+        auto sequenceNumber = gst_event_get_seqnum(event);
+
+        auto streamStartEvent = adoptGRef(gst_event_new_stream_start(gst_stream_get_stream_id(data->stream.get())));
+        gst_event_set_group_id(streamStartEvent.get(), self->priv->groupId);
+        gst_event_set_stream(streamStartEvent.get(), data->stream.get());
+        gst_event_set_seqnum(streamStartEvent.get(), sequenceNumber);
+        gst_pad_probe_info_set_event(info, streamStartEvent.leakRef());
         return GST_PAD_PROBE_OK;
     }
     case GST_EVENT_CAPS: {
@@ -1347,11 +1348,11 @@ void webkitMediaStreamSrcAddTrack(WebKitMediaStreamSrc* self, MediaStreamTrackPr
     data->element.reset(GST_ELEMENT_CAST(self));
     data->sourceType = track->source().type();
     data->collection = webkitMediaStreamSrcCreateStreamCollection(self);
-    data->streamStartEvent = adoptGRef(gst_event_new_stream_start(gst_stream_get_stream_id(stream.get())));
-    gst_event_set_group_id(data->streamStartEvent.get(), self->priv->groupId);
-    gst_event_set_stream(data->streamStartEvent.get(), stream.get());
+    data->stream = stream;
 
-    GRefPtr stickyStreamStartEvent = data->streamStartEvent;
+    auto stickyStreamStartEvent = adoptGRef(gst_event_new_stream_start(gst_stream_get_stream_id(stream.get())));
+    gst_event_set_group_id(stickyStreamStartEvent.get(), self->priv->groupId);
+    gst_event_set_stream(stickyStreamStartEvent.get(), stream.get());
 
     gst_pad_add_probe(pad.get(), GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, reinterpret_cast<GstPadProbeCallback>(webkitMediaStreamSrcPadProbeCb),
         data, reinterpret_cast<GDestroyNotify>(destroyProbeData));
