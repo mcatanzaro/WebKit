@@ -3007,7 +3007,8 @@ void WebPageProxy::viewWillStartLiveResize()
 
     closeOverlayedViews();
 
-    protectedDrawingArea()->viewWillStartLiveResize();
+    if (RefPtr drawingArea = m_drawingArea)
+        drawingArea->viewWillStartLiveResize();
 
     send(Messages::WebPage::ViewWillStartLiveResize());
 }
@@ -3017,7 +3018,8 @@ void WebPageProxy::viewWillEndLiveResize()
     if (!hasRunningProcess())
         return;
 
-    protectedDrawingArea()->viewWillEndLiveResize();
+    if (RefPtr drawingArea = m_drawingArea)
+        drawingArea->viewWillEndLiveResize();
 
     send(Messages::WebPage::ViewWillEndLiveResize());
 }
