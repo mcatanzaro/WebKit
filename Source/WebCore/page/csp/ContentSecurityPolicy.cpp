@@ -358,7 +358,7 @@ bool ContentSecurityPolicy::allPoliciesWithDispositionAllow(Disposition disposit
     for (auto& policy : m_policies) {
         if (policy->isReportOnly() != isReportOnly)
             continue;
-        if ((policy.get()->*predicate)(std::forward<Args>(args)...))
+        if ((policy.get()->*predicate)(args...))
             return false;
     }
     return true;
@@ -372,7 +372,7 @@ bool ContentSecurityPolicy::allPoliciesWithDispositionAllow(Disposition disposit
     for (auto& policy : m_policies) {
         if (policy->isReportOnly() != isReportOnly)
             continue;
-        if (const ContentSecurityPolicyDirective* violatedDirective = (policy.get()->*predicate)(std::forward<Args>(args)...)) {
+        if (const ContentSecurityPolicyDirective* violatedDirective = (policy.get()->*predicate)(args...)) {
             isAllowed = false;
             callback(*violatedDirective);
         }
@@ -385,7 +385,7 @@ bool ContentSecurityPolicy::allPoliciesAllow(NOESCAPE const ViolatedDirectiveCal
 {
     bool isAllowed = true;
     for (auto& policy : m_policies) {
-        if (const ContentSecurityPolicyDirective* violatedDirective = (policy.get()->*predicate)(std::forward<Args>(args)...)) {
+        if (const ContentSecurityPolicyDirective* violatedDirective = (policy.get()->*predicate)(args...)) {
             if (!violatedDirective->directiveList().isReportOnly())
                 isAllowed = false;
             callback(*violatedDirective);
