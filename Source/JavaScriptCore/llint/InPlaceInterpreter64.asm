@@ -10757,26 +10757,18 @@ mintAlign(_end)
     # note: we don't care about t3 anymore
 if ARM64 or ARM64E
     loadpairq [sc3], t3, wasmInstance
-    addp t3, cfr, PL
-else
+elsif X86_64
     loadq [sc3], wasmInstance
+    loadq 8[sc3], t3
+    loadp (2 * SlotSize)[sc3], PC
 end
     move mintRetDst, sp
-
-if X86_64
-    move wasmInstance, sc2
-end
 
     # Restore PC / MC
     loadp Callee[cfr], ws0
     unboxWasmCallee(ws0, ws1)
     storep ws0, UnboxedWasmCalleeStackSlot[cfr]
-if X86_64
-    move sc2, wasmInstance
-    loadq 8[sc3], t3
     addp t3, cfr, PL
-    loadp (2 * SlotSize)[sc3], PC
-end
 
     # Restore memory
     ipintReloadMemory()
