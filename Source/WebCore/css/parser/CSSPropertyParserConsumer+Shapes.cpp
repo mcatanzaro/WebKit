@@ -333,17 +333,17 @@ static std::optional<CSS::Polygon> consumeBasicShapePolygonFunctionParameters(CS
     };
 }
 
-static std::optional<CSS::Path> consumeBasicShapePathFunctionParameters(CSSParserTokenRange& args, CSS::PropertyParserState&, OptionSet<PathParsingOption> options)
+static std::optional<CSS::Path> consumeBasicShapePathFunctionParameters(CSSParserTokenRange& args, CSS::PropertyParserState&, OptionSet<BasicShapeParsingOptions> options)
 {
     // <path()> = path( <'fill-rule'>? , <string> )
     // https://drafts.csswg.org/css-shapes/#funcdef-basic-shape-path
 
-    if (options.contains(PathParsingOption::RejectPath))
+    if (options.contains(BasicShapeParsingOptions::RejectPathFunction))
         return { };
 
     auto fillRule = peekFillRule(args);
     if (fillRule) {
-        if (options.contains(PathParsingOption::RejectPathFillRule))
+        if (options.contains(BasicShapeParsingOptions::RejectPathFunctionFillRule))
             return { };
 
         args.consumeIncludingWhitespace();
@@ -793,10 +793,13 @@ static std::optional<CSS::ShapeCommand> consumeShapeCommand(CSSParserTokenRange&
     return { };
 }
 
-static std::optional<CSS::Shape> consumeBasicShapeShapeFunctionParameters(CSSParserTokenRange& args, CSS::PropertyParserState& state)
+static std::optional<CSS::Shape> consumeBasicShapeShapeFunctionParameters(CSSParserTokenRange& args, CSS::PropertyParserState& state, OptionSet<BasicShapeParsingOptions> options)
 {
     // shape() = shape( <'fill-rule'>? from <coordinate-pair>, <shape-command># )
     // https://drafts.csswg.org/css-shapes-2/#shape-function
+
+    if (options.contains(BasicShapeParsingOptions::RejectShapeFunction))
+        return { };
 
     auto fillRule = consumeFillRule(args);
 
@@ -965,7 +968,7 @@ static std::optional<CSS::Inset> consumeBasicShapeInsetFunctionParameters(CSSPar
 
 // MARK: - <basic-shape>
 
-RefPtr<CSSValue> consumeBasicShape(CSSParserTokenRange& range, CSS::PropertyParserState& state, OptionSet<PathParsingOption> options)
+RefPtr<CSSValue> consumeBasicShape(CSSParserTokenRange& range, CSS::PropertyParserState& state, OptionSet<BasicShapeParsingOptions> options)
 {
     // <basic-shape> = <circle()> | <ellipse() | <inset()> | <path()> | <polygon()> | <rect()> | <shape()> | <xywh()>
     // https://drafts.csswg.org/css-shapes/#typedef-basic-shape
@@ -994,7 +997,7 @@ RefPtr<CSSValue> consumeBasicShape(CSSParserTokenRange& range, CSS::PropertyPars
     else if (id == CSSValuePath)
         result = toBasicShape<CSSValuePath>(consumeBasicShapePathFunctionParameters(args, state, options));
     else if (id == CSSValueShape)
-        result = toBasicShape<CSSValueShape>(consumeBasicShapeShapeFunctionParameters(args, state));
+        result = toBasicShape<CSSValueShape>(consumeBasicShapeShapeFunctionParameters(args, state, options));
 
     if (!result || !args.atEnd())
         return { };
@@ -1030,6 +1033,12 @@ RefPtr<CSSValue> consumeShapeOutside(CSSParserTokenRange& range, CSS::PropertyPa
     // <'shape-outside'> = none | [ <basic-shape> || <shape-box> ] | <image>
     // https://drafts.csswg.org/css-shapes-1/#propdef-shape-outside
 
+    // FIXME: Add support for `path()` and `shape()` functions in `shape-outside`.
+    constexpr auto options = OptionSet<BasicShapeParsingOptions> {
+        BasicShapeParsingOptions::RejectPathFunction,
+        BasicShapeParsingOptions::RejectShapeFunction
+    };
+
     if (auto imageOrNoneValue = consumeImageOrNone(range, state))
         return imageOrNoneValue;
 
@@ -1037,8 +1046,7 @@ RefPtr<CSSValue> consumeShapeOutside(CSSParserTokenRange& range, CSS::PropertyPa
     auto boxValue = CSSPropertyParsing::consumeShapeBox(range);
     bool hasShapeValue = false;
 
-    // FIXME: The spec says we should allows `path()` functions.
-    if (RefPtr basicShape = consumeBasicShape(range, state, PathParsingOption::RejectPath)) {
+    if (RefPtr basicShape = consumeBasicShape(range, state, options)) {
         list.append(basicShape.releaseNonNull());
         hasShapeValue = true;
     }

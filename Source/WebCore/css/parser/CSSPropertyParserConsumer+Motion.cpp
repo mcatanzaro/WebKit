@@ -157,7 +157,7 @@ RefPtr<CSSValue> consumeOffsetPath(CSSParserTokenRange& range, CSS::PropertyPars
     auto consumeShape = [&]() -> bool {
         if (shapeOrRay)
             return false;
-        shapeOrRay = consumeBasicShape(range, state, PathParsingOption::RejectPathFillRule);
+        shapeOrRay = consumeBasicShape(range, state, BasicShapeParsingOptions::RejectPathFunctionFillRule);
         return !!shapeOrRay;
     };
     auto consumeBox = [&]() -> bool {
