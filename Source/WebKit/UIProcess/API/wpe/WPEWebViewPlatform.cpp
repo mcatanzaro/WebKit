@@ -438,7 +438,8 @@ void ViewPlatform::handleGesture(WPEEvent* event)
     if (!gestureController)
         return;
 
-    wpe_gesture_controller_handle_event(gestureController, event);
+    if (!wpe_gesture_controller_handle_event(gestureController, event))
+        return;
 
     if (wpe_event_get_event_type(event) == WPE_EVENT_TOUCH_DOWN)
         return;
