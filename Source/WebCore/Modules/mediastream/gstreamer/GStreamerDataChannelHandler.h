@@ -64,9 +64,9 @@ private:
     void onMessageString(CStringView);
     void onError(GError*);
     void onClose();
-
     void readyStateChanged();
-    void bufferedAmountChanged();
+    void bufferedAmountChanged(size_t);
+
     bool checkState();
     void postTask(Function<void()>&&);
 
@@ -87,6 +87,8 @@ private:
     bool m_closing { false };
 
     String m_channelId;
+
+    Vector<unsigned long, 6> m_signalHandlers;
 };
 
 } // namespace WebCore

@@ -88,6 +88,21 @@ GUniquePtr<GstStructure> GStreamerDataChannelHandler::fromRTCDataChannelInit(con
     return init;
 }
 
+struct DataChannelNotifier {
+    DataChannelNotifier(GStreamerDataChannelHandler& handler)
+        : m_handler(handler)
+    {
+    }
+
+    static void destruct(void* notifier, GClosure*)
+    {
+        delete static_cast<DataChannelNotifier*>(notifier);
+    }
+
+    // RTCDataChannelHandler is not refcounted, its unique instance is managed by the RTCDataChannel.
+    GStreamerDataChannelHandler& m_handler;
+};
+
 GStreamerDataChannelHandler::GStreamerDataChannelHandler(GRefPtr<GstWebRTCDataChannel>&& channel)
     : m_channel(WTF::move(channel))
 {
@@ -106,31 +121,36 @@ GStreamerDataChannelHandler::GStreamerDataChannelHandler(GRefPtr<GstWebRTCDataCh
         checkState();
     }
 
-    g_signal_connect_swapped(m_channel.get(), "notify::ready-state", G_CALLBACK(+[](GStreamerDataChannelHandler* handler) {
-        handler->readyStateChanged();
-    }), this);
-    g_signal_connect_swapped(m_channel.get(), "notify::buffered-amount", G_CALLBACK(+[](GStreamerDataChannelHandler* handler) {
-        handler->bufferedAmountChanged();
-    }), this);
-    g_signal_connect_swapped(m_channel.get(), "on-message-data", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, GBytes* bytes) {
-        handler->onMessageData(bytes);
-    }), this);
-    g_signal_connect_swapped(m_channel.get(), "on-message-string", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, const char* message) {
-        handler->onMessageString(CStringView::unsafeFromUTF8(message));
-    }), this);
-    g_signal_connect_swapped(m_channel.get(), "on-error", G_CALLBACK(+[](GStreamerDataChannelHandler* handler, GError* error) {
-        handler->onError(error);
-    }), this);
-    g_signal_connect_swapped(m_channel.get(), "on-close", G_CALLBACK(+[](GStreamerDataChannelHandler* handler) {
-        handler->onClose();
-    }), this);
+    m_signalHandlers.append(g_signal_connect_data(m_channel.get(), "notify::ready-state", G_CALLBACK(+[](GstWebRTCDataChannel*, GParamSpec*, DataChannelNotifier* notifier) {
+        notifier->m_handler.readyStateChanged();
+    }), new DataChannelNotifier { *this }, DataChannelNotifier::destruct, static_cast<GConnectFlags>(0)));
+    m_signalHandlers.append(g_signal_connect_data(m_channel.get(), "notify::buffered-amount", G_CALLBACK(+[](GstWebRTCDataChannel* channel, GParamSpec*, DataChannelNotifier* notifier) {
+        uint64_t currentBufferedAmount;
+        g_object_get(channel, "buffered-amount", &currentBufferedAmount, nullptr);
+        notifier->m_handler.bufferedAmountChanged(static_cast<size_t>(currentBufferedAmount));
+    }), new DataChannelNotifier { *this }, DataChannelNotifier::destruct, static_cast<GConnectFlags>(0)));
+    m_signalHandlers.append(g_signal_connect_data(m_channel.get(), "on-message-data", G_CALLBACK(+[](GstWebRTCDataChannel*, GBytes* bytes, DataChannelNotifier* notifier) {
+        notifier->m_handler.onMessageData(bytes);
+    }), new DataChannelNotifier { *this }, DataChannelNotifier::destruct, static_cast<GConnectFlags>(0)));
+    m_signalHandlers.append(g_signal_connect_data(m_channel.get(), "on-message-string", G_CALLBACK(+[](GstWebRTCDataChannel*, const char* message, DataChannelNotifier* notifier) {
+        notifier->m_handler.onMessageString(CStringView::unsafeFromUTF8(message));
+    }), new DataChannelNotifier { *this }, DataChannelNotifier::destruct, static_cast<GConnectFlags>(0)));
+    m_signalHandlers.append(g_signal_connect_data(m_channel.get(), "on-error", G_CALLBACK(+[](GstWebRTCDataChannel*, GError* error, DataChannelNotifier* notifier) {
+        notifier->m_handler.onError(error);
+    }), new DataChannelNotifier { *this }, DataChannelNotifier::destruct, static_cast<GConnectFlags>(0)));
+    m_signalHandlers.append(g_signal_connect_data(m_channel.get(), "on-close", G_CALLBACK(+[](GstWebRTCDataChannel*, DataChannelNotifier* notifier) {
+        notifier->m_handler.onClose();
+    }), new DataChannelNotifier { *this }, DataChannelNotifier::destruct, static_cast<GConnectFlags>(0)));
 }
 
 GStreamerDataChannelHandler::~GStreamerDataChannelHandler()
 {
     DC_DEBUG("Deleting GStreamerDataChannelHandler for channel %p", m_channel.get());
-    if (m_channel)
-        g_signal_handlers_disconnect_by_data(m_channel.get(), this);
+    if (!m_channel) [[unlikely]]
+        return;
+
+    while (!m_signalHandlers.isEmpty())
+        g_signal_handler_disconnect(m_channel.get(), m_signalHandlers.takeLast());
 }
 
 RTCDataChannelInit GStreamerDataChannelHandler::dataChannelInit() const
@@ -324,14 +344,10 @@ void GStreamerDataChannelHandler::readyStateChanged()
     checkState();
 }
 
-void GStreamerDataChannelHandler::bufferedAmountChanged()
+void GStreamerDataChannelHandler::bufferedAmountChanged(size_t bufferedAmount)
 {
     Locker locker { m_clientLock };
 
-    uint64_t currentBufferedAmount;
-    g_object_get(m_channel.get(), "buffered-amount", &currentBufferedAmount, nullptr);
-
-    auto bufferedAmount = static_cast<size_t>(currentBufferedAmount);
     DC_DEBUG("New buffered amount on channel %p: %" G_GSIZE_FORMAT " old: %" G_GSIZE_FORMAT, m_channel.get(), bufferedAmount, m_cachedBufferedAmount ? *m_cachedBufferedAmount : -1);
 
     if (m_cachedBufferedAmount && (*m_cachedBufferedAmount >= bufferedAmount)) {
