@@ -782,6 +782,7 @@ webkit_web_view_get_tls_info                         (WebKitWebView             
                                                       GTlsCertificate          **certificate,
                                                       GTlsCertificateFlags      *errors);
 
+#if PLATFORM(GTK) || ENABLE(2022_GLIB_API)
 WEBKIT_API void
 webkit_web_view_get_snapshot                         (WebKitWebView             *web_view,
                                                       WebKitSnapshotRegion       region,
@@ -806,6 +807,7 @@ WEBKIT_API WebKitImage *
 webkit_web_view_get_snapshot_finish                  (WebKitWebView             *web_view,
                                                       GAsyncResult              *result,
                                                       GError                   **error);
+#endif
 #endif
 
 WEBKIT_API WebKitUserContentManager *
