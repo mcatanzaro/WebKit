@@ -3504,8 +3504,11 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin(const URL& url)
     // Let also other listeners subscribe to (application) messages in this bus.
     auto bus = adoptGRef(gst_pipeline_get_bus(GST_PIPELINE(m_pipeline.get())));
     gst_bus_enable_sync_message_emission(bus.get());
-    connectSimpleBusMessageCallback(m_pipeline.get(), [this](GstMessage* message) {
-        handleMessage(message);
+    connectSimpleBusMessageCallback(m_pipeline.get(), [weakThis = ThreadSafeWeakPtr { *this }](GstMessage* message) {
+        RefPtr player = weakThis.get();
+        if (!player)
+            return;
+        player->handleMessage(message);
     });
 
     g_signal_connect_swapped(bus.get(), "sync-message::need-context", G_CALLBACK(+[](MediaPlayerPrivateGStreamer* player, GstMessage* message) {

@@ -171,8 +171,11 @@ bool GStreamerMediaEndpoint::initializePipeline()
     gst_element_set_base_time(m_pipeline.get(), 0);
     gst_element_set_start_time(m_pipeline.get(), GST_CLOCK_TIME_NONE);
 
-    connectSimpleBusMessageCallback(m_pipeline.get(), [this](GstMessage* message) {
-        handleMessage(message);
+    connectSimpleBusMessageCallback(m_pipeline.get(), [weakThis = ThreadSafeWeakPtr { *this }](GstMessage* message) {
+        RefPtr endPoint = weakThis.get();
+        if (!endPoint)
+            return;
+        endPoint->handleMessage(message);
     }, AsynchronousPipelineDumping::Yes);
 
     auto binName = makeString("webkit-webrtcbin-"_s, nPipeline);

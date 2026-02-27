@@ -145,8 +145,11 @@ void AudioDestinationGStreamer::initializePipeline()
     static Atomic<uint32_t> pipelineId;
     m_pipeline = gst_pipeline_new(makeString("audio-destination-"_s, pipelineId.exchangeAdd(1)).ascii().data());
     registerActivePipeline(m_pipeline);
-    connectSimpleBusMessageCallback(m_pipeline.get(), [this](GstMessage* message) {
-        this->handleMessage(message);
+    connectSimpleBusMessageCallback(m_pipeline.get(), [weakThis = ThreadSafeWeakPtr { *this }](GstMessage* message) {
+        RefPtr destination = weakThis.get();
+        if (!destination)
+            return;
+        destination->handleMessage(message, false);
     });
 
     m_src = GST_ELEMENT_CAST(g_object_new(WEBKIT_TYPE_WEB_AUDIO_SRC, nullptr));
@@ -200,14 +203,18 @@ unsigned AudioDestinationGStreamer::framesPerBuffer() const
     return AudioUtilities::renderQuantumSize;
 }
 
-bool AudioDestinationGStreamer::handleMessage(GstMessage* message)
+bool AudioDestinationGStreamer::handleMessage(GstMessage* message, bool handleLatencyMessage)
 {
     switch (GST_MESSAGE_TYPE(message)) {
     case GST_MESSAGE_ERROR:
         notifyIsPlaying(false);
         break;
     case GST_MESSAGE_LATENCY:
-        gst_bin_recalculate_latency(GST_BIN_CAST(m_pipeline.get()));
+        if (!handleLatencyMessage)
+            break;
+        gst_element_call_async(m_pipeline.get(), reinterpret_cast<GstElementCallAsyncFunc>(+[](GstElement* pipeline, gpointer) {
+            gst_bin_recalculate_latency(GST_BIN_CAST(pipeline));
+        }), nullptr, nullptr);
         break;
     default:
         break;
@@ -240,8 +247,11 @@ void AudioDestinationGStreamer::startRendering(CompletionHandler<void(bool)>&& c
         return;
     }
 
-    notifyStartupResult(webkitGstSetElementStateSynchronously(m_pipeline.get(), GST_STATE_PLAYING, [this](GstMessage* message) -> bool {
-        return handleMessage(message);
+    notifyStartupResult(webkitGstSetElementStateSynchronously(m_pipeline.get(), GST_STATE_PLAYING, [weakThis = ThreadSafeWeakPtr { *this }](GstMessage* message) -> bool {
+        RefPtr destination = weakThis.get();
+        if (!destination)
+            return false;
+        return destination->handleMessage(message, true);
     }));
 }
 
@@ -274,8 +284,11 @@ void AudioDestinationGStreamer::stopRendering(CompletionHandler<void(bool)>&& co
         return;
     }
 
-    notifyStopResult(webkitGstSetElementStateSynchronously(m_pipeline.get(), GST_STATE_READY, [this](GstMessage* message) -> bool {
-        return handleMessage(message);
+    notifyStopResult(webkitGstSetElementStateSynchronously(m_pipeline.get(), GST_STATE_READY, [weakThis = ThreadSafeWeakPtr { *this }](GstMessage* message) -> bool {
+        RefPtr destination = weakThis.get();
+        if (!destination)
+            return false;
+        return destination->handleMessage(message, true);
     }));
 }
 
