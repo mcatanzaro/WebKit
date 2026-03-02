@@ -4161,6 +4161,11 @@ void MediaPlayerPrivateGStreamer::paint(GraphicsContext& context, const FloatRec
         return;
     }
 
+    if (!GST_IS_BUFFER(gst_sample_get_buffer(sample.get()))) {
+        GST_DEBUG_OBJECT(pipeline(), "Cancelling attempt to render sample without buffer");
+        return;
+    }
+
     auto caps = gst_sample_get_caps(sample.get());
     auto presentationSize = getVideoResolutionFromCaps(caps);
     if (!presentationSize)
