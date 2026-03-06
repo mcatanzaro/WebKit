@@ -1,4 +1,16 @@
 ==================
+WPE WebKit 2.51.93
+==================
+
+What's new in WPE WebKit 2.51.93?
+
+  - Make text look like in other browsers by blending in linear color space.
+  - Avoid composition for non visible layers with running animations.
+  - Disable spawning the GStreamer registry scanner on Android.
+  - Fix EGL display initialization on Android.
+  - Fix several crashes and rendering issues.
+
+==================
 WPE WebKit 2.51.92
 ==================
 
