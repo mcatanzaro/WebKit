@@ -1,4 +1,14 @@
 =================
+WebKitGTK 2.51.93
+=================
+
+What's new in WebKitGTK 2.51.93?
+
+  - Make text look like in other browsers by blending in linear color space.
+  - Avoid composition for non visible layers with running animations.
+  - Fix several crashes and rendering issues.
+
+=================
 WebKitGTK 2.51.92
 =================
 
