@@ -256,6 +256,9 @@ private:
     unsigned m_maximumDOMTreeDepth;
 
     bool m_inQuirksMode;
+
+    std::unique_ptr<StringBuilder> m_textNodeBuffer;
+    RefPtr<Text> m_currentTextNode;
 };
 
 } // namespace WebCore
