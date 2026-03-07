@@ -5670,6 +5670,7 @@ std::optional<ScrollingNodeID> RenderLayerCompositor::updateScrollCoordinationFo
         newNodeID = updateScrollingNodeForPositioningRole(layer, compositingAncestor, *currentTreeState, changes);
         childTreeState.parentNodeID = newNodeID;
         childTreeState.hasParent = true;
+        childTreeState.nextChildIndex = 0;
         currentTreeState = &childTreeState;
     } else
         detachScrollCoordinatedLayer(layer, ScrollCoordinationRole::Positioning);
@@ -5679,6 +5680,7 @@ std::optional<ScrollingNodeID> RenderLayerCompositor::updateScrollCoordinationFo
         newNodeID = updateScrollingNodeForScrollingProxyRole(layer, *currentTreeState, changes);
         childTreeState.parentNodeID = newNodeID;
         childTreeState.hasParent = true;
+        childTreeState.nextChildIndex = 0;
         currentTreeState = &childTreeState;
     } else
         detachScrollCoordinatedLayer(layer, ScrollCoordinationRole::ScrollingProxy);
@@ -5689,6 +5691,7 @@ std::optional<ScrollingNodeID> RenderLayerCompositor::updateScrollCoordinationFo
         // ViewportConstrained nodes are the parent of same-layer scrolling nodes, so adjust the ScrollingTreeState.
         childTreeState.parentNodeID = newNodeID;
         childTreeState.hasParent = true;
+        childTreeState.nextChildIndex = 0;
         currentTreeState = &childTreeState;
     } else
         detachScrollCoordinatedLayer(layer, ScrollCoordinationRole::ViewportConstrained);
