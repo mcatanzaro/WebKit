@@ -2326,8 +2326,10 @@ void Page::updateRendering()
 
     runProcessingStep(RenderingUpdateStep::FocusFixup, [&] (Document& document) {
         if (RefPtr focusedElement = document.focusedElement()) {
-            if (!focusedElement->isFocusable())
+            if (!focusedElement->isFocusable()) {
                 document.setFocusedElement(nullptr);
+                document.setFocusNavigationStartingNode(focusedElement.get());
+            }
         }
     });
 
