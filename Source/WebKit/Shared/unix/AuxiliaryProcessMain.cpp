@@ -41,6 +41,10 @@
 #include "unix/BreakpadExceptionHandler.h"
 #endif
 
+#if USE(GLIB)
+#include "WebKitSettingsBackend.h"
+#endif
+
 namespace WebKit {
 
 AuxiliaryProcessMainCommon::AuxiliaryProcessMainCommon()
@@ -92,6 +96,10 @@ void AuxiliaryProcess::platformInitialize(const AuxiliaryProcessInitializationPa
     RELEASE_ASSERT(!sigemptyset(&signalAction.sa_mask));
     signalAction.sa_handler = SIG_IGN;
     RELEASE_ASSERT(!sigaction(SIGPIPE, &signalAction, nullptr));
+
+#if USE(GLIB)
+    webkitSettingsBackendRegister(*this);
+#endif
 }
 
 } // namespace WebKit

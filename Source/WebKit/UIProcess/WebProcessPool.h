@@ -92,6 +92,10 @@ OBJC_CLASS WKWebInspectorPreferenceObserver;
 #include <wtf/cf/NotificationCenterCF.h>
 #endif
 
+#if USE(GLIB)
+#include "GSettingsProvider.h"
+#endif
+
 namespace API {
 class AutomationClient;
 class DownloadClient;
@@ -943,6 +947,10 @@ private:
 
 #if HAVE(DISPLAY_LINK)
     DisplayLinkCollection m_displayLinks;
+#endif
+
+#if USE(GLIB)
+    GSettingsProvider m_gsettingsProvider;
 #endif
 
 #if PLATFORM(GTK) || PLATFORM(WPE)

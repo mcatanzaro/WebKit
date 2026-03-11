@@ -119,6 +119,7 @@ endif ()
 
 list(APPEND WebKit_SERIALIZATION_IN_FILES
     Shared/glib/AvailableInputDevices.serialization.in
+    Shared/glib/GSettingsValue.serialization.in
     Shared/glib/InputMethodState.serialization.in
     Shared/glib/RenderProcessInfo.serialization.in
     Shared/glib/RendererBufferTransportMode.serialization.in
@@ -511,6 +512,10 @@ else ()
 endif ()
 
 list(APPEND WebKit_MESSAGES_IN_FILES
+    # Shared/glib/WebKitSettingsBackend FIXME needed?
+
+    UIProcess/glib/GSettingsProvider
+
     WebProcess/glib/SystemSettingsManager
 )
 

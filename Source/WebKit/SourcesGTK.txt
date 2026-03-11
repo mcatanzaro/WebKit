@@ -91,6 +91,7 @@ Shared/glib/ProcessExecutablePathGLib.cpp
 Shared/glib/UserMessage.cpp
 Shared/glib/WebContextMenuItemGlib.cpp
 Shared/glib/WebKitContextMenuGAction.cpp @no-unify
+Shared/glib/WebKitSettingsBackend.cpp @no-unify
 
 Shared/gtk/ArgumentCodersGtk.cpp
 Shared/gtk/NativeWebKeyboardEventGtk.cpp
@@ -270,6 +271,7 @@ UIProcess/glib/DisplayVBlankMonitorDRM.cpp
 UIProcess/glib/DisplayVBlankMonitorThreaded.cpp
 UIProcess/glib/DisplayVBlankMonitorTimer.cpp
 UIProcess/glib/FenceMonitor.cpp
+UIProcess/glib/GSettingsProvider.cpp
 UIProcess/glib/ScreenManager.cpp
 UIProcess/glib/SystemSettingsManagerProxy.cpp
 UIProcess/glib/WebPageProxyGLib.cpp

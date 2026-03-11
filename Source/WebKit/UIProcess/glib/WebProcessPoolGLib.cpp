@@ -144,6 +144,9 @@ static void seatDevicesChangedCallback(GdkSeat* seat, GdkDevice*, WebProcessPool
 
 void WebProcessPool::platformInitialize(NeedsGlobalStaticInitialization)
 {
+WTFLogAlways("Registering message receiver...");
+    addMessageReceiver(Messages::GSettingsProvider::messageReceiverName(), m_gsettingsProvider);
+
     if (const auto forceComplexText = CStringView::unsafeFromUTF8(getenv("WEBKIT_FORCE_COMPLEX_TEXT")))
         m_alwaysUsesComplexTextCodePath = forceComplexText == "1"_s;
 
