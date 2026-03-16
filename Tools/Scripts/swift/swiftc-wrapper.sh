@@ -1,20 +1,29 @@
 #!/bin/bash
 # cmake accumulates CFLAGS from pkg-config, and then passes them to swiftc.
-# One such argument is -pthread which swiftc cannot accommodate. Filter it out.
+# This script filters out the arguments that swiftc cannot accommodate.
 
 set -e
 
-REAL_SWIFTC=
+REAL_SWIFTC=swiftc
 args=()
 
 for arg in "$@"; do
-    if [ "$arg" != "-pthread" ]; then
-        if [[ "$arg" == --original-swift-compiler=* ]]; then
+    case "$arg" in
+        "-mfpmath=sse") ;;
+        "-msse") ;;
+        "-msse2") ;;
+        "-pthread") ;;
+        "-Wl,"*)
+            ldarg="${arg#-Wl,}"
+            args+=("-Xlinker" "${ldarg//,/=}")
+            ;;
+        "--original-swift-compiler="*)
             REAL_SWIFTC="${arg#--original-swift-compiler=}"
-        else
+            ;;
+        *)
             args+=("$arg")
-        fi
-    fi
+            ;;
+    esac
 done
 
 exec "$REAL_SWIFTC" "${args[@]}"
