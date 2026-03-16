@@ -180,6 +180,10 @@
 #include "PointerLockController.h"
 #endif
 
+#if PLATFORM(COCOA)
+#include <wtf/cocoa/RuntimeApplicationChecksCocoa.h>
+#endif
+
 namespace WebCore {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(EventHandler);
@@ -4319,7 +4323,20 @@ bool EventHandler::internalKeyEvent(const PlatformKeyboardEvent& initialKeyEvent
     // webkit.org/b/305666: Emojis appear as Chinese characters in Google Docs
     auto shouldAvoidDispatchingKeyPressEvent = [&] {
         auto text = keyPressEvent.text();
-        return !text.isEmpty() && !U_IS_BMP(text.characterStartingAt(0));
+        if (!text.isEmpty() && !U_IS_BMP(text.characterStartingAt(0)))
+            return true;
+
+        // Suppress keypress for command shortcuts (Cmd+key, Ctrl+key).
+        // https://w3c.github.io/uievents/#keypress
+        if (initialKeyEvent.metaKey() || initialKeyEvent.controlKey()) {
+#if PLATFORM(COCOA)
+            return linkedOnOrAfterSDKWithBehavior(SDKAlignedBehavior::SuppressKeypressForModifierShortcuts);
+#else
+            return true;
+#endif
+        }
+
+        return false;
     };
 
     auto keypress = KeyboardEvent::create(keyPressEvent, &frame->windowProxy());
