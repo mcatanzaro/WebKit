@@ -260,7 +260,13 @@ static void webkitGstWebRTCIceAgentAddRiceTurnServer(WebKitGstIceAgent* agent, c
 
     auto family = rice_address_get_family(riceAddress.get());
     for (unsigned i = 0; i < nRelay; i++) {
-        auto config = adoptGRef(rice_turn_config_new(relays[i], riceAddress.get(), credentials.get(), 1, &family, tlsConfig.get()));
+        // FIXME: Hardcoding UDP as allocation transport type for now. Our TURN support needs further work anyway.
+        // https://bugs.webkit.org/show_bug.cgi?id=310005
+        auto config = adoptGRef(rice_turn_config_new(relays[i], riceAddress.get(), credentials.get(),
+#if RICE_CHECK_VERSION(0, 3, 0)
+            RICE_TRANSPORT_TYPE_UDP,
+#endif
+            1, &family, tlsConfig.get()));
         agent->priv->turnConfigs.append(WTF::move(config));
     }
 }
