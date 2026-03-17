@@ -881,12 +881,12 @@ void AccessibilityRenderObject::offsetBoundingBoxForRemoteSVGElement(LayoutRect&
 LayoutRect AccessibilityRenderObject::boundingBoxRect() const
 {
     CheckedPtr renderer = this->renderer();
-    if (!renderer)
-        return AccessibilityNodeObject::boundingBoxRect();
-
-    RefPtr node = renderer->node();
+    RefPtr node = renderer ? renderer->node() : nullptr;
     if (node) // If we are a continuation, we want to make sure to use the primary renderer.
         renderer = node->renderer();
+
+    if (!renderer)
+        return AccessibilityNodeObject::boundingBoxRect();
 
     // absoluteFocusRingQuads will query the hierarchy below this element, which for large webpages can be very slow.
     // For a web area, which will have the most elements of any element, absoluteQuads should be used.
