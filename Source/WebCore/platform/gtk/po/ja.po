@@ -286,7 +286,7 @@ msgstr "太字(_B)"
 
 #: ../../LocalizedStrings.cpp:350
 msgid "_Italic"
-msgstr "車体(_I)"
+msgstr "斜体(_I)"
 
 #: ../../LocalizedStrings.cpp:355
 msgid "_Underline"
