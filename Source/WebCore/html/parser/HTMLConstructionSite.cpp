@@ -239,6 +239,7 @@ void HTMLConstructionSite::attachLater(Ref<ContainerNode>&& parent, Ref<Node>&& 
     if (m_openElements.stackDepth() >= m_maximumDOMTreeDepth && task.parent->parentNode()) {
         m_openElements.pop();
         task.parent = task.parent->parentNode();
+        m_hasReachedMaxDOMTreeDepth = true;
     }
 
     ASSERT(task.parent);

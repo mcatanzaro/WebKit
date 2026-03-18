@@ -812,6 +812,8 @@ void HTMLTreeBuilder::processStartTagForInBody(AtomHTMLToken&& token)
         m_tree.insertHTMLElement(WTF::move(token));
         m_framesetOk = false;
         m_insertionMode = InsertionMode::InTable;
+        if (m_tree.hasReachedMaxDOMTreeDepth())
+            resetInsertionModeAppropriately();
         return;
     case TagName::image:
         parseError(token);
@@ -1085,11 +1087,15 @@ void HTMLTreeBuilder::processStartTagForInTable(AtomHTMLToken&& token)
         m_tree.activeFormattingElements().appendMarker();
         m_tree.insertHTMLElement(WTF::move(token));
         m_insertionMode = InsertionMode::InCaption;
+        if (m_tree.hasReachedMaxDOMTreeDepth())
+            resetInsertionModeAppropriately();
         return;
     case TagName::colgroup:
         m_tree.openElements().popUntilTableScopeMarker();
         m_tree.insertHTMLElement(WTF::move(token));
         m_insertionMode = InsertionMode::InColumnGroup;
+        if (m_tree.hasReachedMaxDOMTreeDepth())
+            resetInsertionModeAppropriately();
         return;
     case TagName::col:
         processFakeStartTag(TagName::colgroup);
@@ -1102,18 +1108,20 @@ void HTMLTreeBuilder::processStartTagForInTable(AtomHTMLToken&& token)
         m_tree.openElements().popUntilTableScopeMarker();
         m_tree.insertHTMLElement(WTF::move(token));
         m_insertionMode = InsertionMode::InTableBody;
+        if (m_tree.hasReachedMaxDOMTreeDepth())
+            resetInsertionModeAppropriately();
         return;
     case TagName::th:
     case TagName::td:
     case TagName::tr:
         processFakeStartTag(TagName::tbody);
-        ASSERT(m_insertionMode == InsertionMode::InTableBody);
+        ASSERT(m_insertionMode == InsertionMode::InTableBody || m_tree.hasReachedMaxDOMTreeDepth());
         processStartTag(WTF::move(token));
         return;
     case TagName::table:
         parseError(token);
         if (!processTableEndTagForInTable()) {
-            ASSERT(isParsingFragmentOrTemplateContents());
+            ASSERT(isParsingFragmentOrTemplateContents() || m_tree.hasReachedMaxDOMTreeDepth());
             return;
         }
         processStartTag(WTF::move(token));
@@ -1280,12 +1288,14 @@ void HTMLTreeBuilder::processStartTag(AtomHTMLToken&& token)
             m_tree.openElements().popUntilTableBodyScopeMarker(); // How is there ever anything to pop?
             m_tree.insertHTMLElement(WTF::move(token));
             m_insertionMode = InsertionMode::InRow;
+            if (m_tree.hasReachedMaxDOMTreeDepth())
+                resetInsertionModeAppropriately();
             return;
         case TagName::th:
         case TagName::td:
             parseError(token);
             processFakeStartTag(TagName::tr);
-            ASSERT(m_insertionMode == InsertionMode::InRow);
+            ASSERT(m_insertionMode == InsertionMode::InRow || m_tree.hasReachedMaxDOMTreeDepth());
             processStartTag(WTF::move(token));
             return;
         case TagName::caption:
@@ -1295,7 +1305,7 @@ void HTMLTreeBuilder::processStartTag(AtomHTMLToken&& token)
         case TagName::tfoot:
         case TagName::thead:
             if (!m_tree.openElements().hasAnyInTableScope({ HTML::tbody, HTML::thead, HTML::tfoot })) {
-                ASSERT(isParsingFragmentOrTemplateContents());
+                ASSERT(isParsingFragmentOrTemplateContents() || m_tree.hasReachedMaxDOMTreeDepth());
                 parseError(token);
                 return;
             }
@@ -1316,6 +1326,8 @@ void HTMLTreeBuilder::processStartTag(AtomHTMLToken&& token)
             m_tree.openElements().popUntilTableRowScopeMarker();
             m_tree.insertHTMLElement(WTF::move(token));
             m_insertionMode = InsertionMode::InCell;
+            if (m_tree.hasReachedMaxDOMTreeDepth())
+                resetInsertionModeAppropriately();
             m_tree.activeFormattingElements().appendMarker();
             return;
         case TagName::tr:
@@ -1326,10 +1338,10 @@ void HTMLTreeBuilder::processStartTag(AtomHTMLToken&& token)
         case TagName::tfoot:
         case TagName::thead:
             if (!processTrEndTagForInRow()) {
-                ASSERT(isParsingFragmentOrTemplateContents());
+                ASSERT(isParsingFragmentOrTemplateContents() || m_tree.hasReachedMaxDOMTreeDepth());
                 return;
             }
-            ASSERT(m_insertionMode == InsertionMode::InTableBody);
+            ASSERT(m_insertionMode == InsertionMode::InTableBody || m_tree.hasReachedMaxDOMTreeDepth());
             processStartTag(WTF::move(token));
             return;
         default:
@@ -1360,6 +1372,9 @@ void HTMLTreeBuilder::processStartTag(AtomHTMLToken&& token)
             break;
         }
         processStartTagForInBody(WTF::move(token));
+        if (m_insertionMode == InsertionMode::InCell && m_tree.hasReachedMaxDOMTreeDepth()
+            && !m_tree.openElements().hasAnyInTableScope({ HTML::td, HTML::th }))
+            resetInsertionModeAppropriately();
         break;
     case InsertionMode::AfterBody:
     case InsertionMode::AfterAfterBody:
@@ -1830,7 +1845,8 @@ void HTMLTreeBuilder::processEndTagForInTableBody(AtomHTMLToken&& token)
         return;
     case TagName::table:
         if (!m_tree.openElements().hasAnyInTableScope({ HTML::tbody, HTML::thead, HTML::tfoot })) {
-            ASSERT(isParsingFragmentOrTemplateContents());
+            if (!isParsingFragmentOrTemplateContents())
+                resetInsertionModeAppropriately();
             parseError(token);
             return;
         }
@@ -1864,10 +1880,10 @@ void HTMLTreeBuilder::processEndTagForInRow(AtomHTMLToken&& token)
         return;
     case TagName::table:
         if (!processTrEndTagForInRow()) {
-            ASSERT(isParsingFragmentOrTemplateContents());
+            ASSERT(isParsingFragmentOrTemplateContents() || m_tree.hasReachedMaxDOMTreeDepth());
             return;
         }
-        ASSERT(m_insertionMode == InsertionMode::InTableBody);
+        ASSERT(m_insertionMode == InsertionMode::InTableBody || m_tree.hasReachedMaxDOMTreeDepth());
         processEndTag(WTF::move(token));
         return;
     case TagName::tbody:
@@ -1878,7 +1894,7 @@ void HTMLTreeBuilder::processEndTagForInRow(AtomHTMLToken&& token)
             return;
         }
         processFakeEndTag(TagName::tr);
-        ASSERT(m_insertionMode == InsertionMode::InTableBody);
+        ASSERT(m_insertionMode == InsertionMode::InTableBody || m_tree.hasReachedMaxDOMTreeDepth());
         processEndTag(WTF::move(token));
         return;
     case TagName::body:
@@ -2125,7 +2141,8 @@ bool HTMLTreeBuilder::processCaptionEndTagForInCaption()
 bool HTMLTreeBuilder::processTrEndTagForInRow()
 {
     if (!m_tree.openElements().inTableScope(HTML::tr)) {
-        ASSERT(isParsingFragmentOrTemplateContents());
+        if (!isParsingFragmentOrTemplateContents())
+            resetInsertionModeAppropriately();
         // FIXME: parse error
         return false;
     }
@@ -2139,7 +2156,8 @@ bool HTMLTreeBuilder::processTrEndTagForInRow()
 bool HTMLTreeBuilder::processTableEndTagForInTable()
 {
     if (!m_tree.openElements().inTableScope(HTML::table)) {
-        ASSERT(isParsingFragmentOrTemplateContents());
+        if (!isParsingFragmentOrTemplateContents())
+            resetInsertionModeAppropriately();
         // FIXME: parse error.
         return false;
     }
