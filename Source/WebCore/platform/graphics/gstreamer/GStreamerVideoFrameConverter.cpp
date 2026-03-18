@@ -64,21 +64,23 @@ GStreamerVideoFrameConverter::Pipeline::Pipeline(Type type)
     case Type::GLMemory: {
         auto glcolorconvert = makeGStreamerElement("glcolorconvert"_s);
         auto gldownload = makeGStreamerElement("gldownload"_s);
-        auto videoscale = makeGStreamerElement("videoscale"_s);
+        auto videoconvert = makeGStreamerElement("videoconvert"_s);
         m_pipeline = gst_element_factory_make("pipeline", "video-frame-converter-gl");
-        gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_src.get(), glcolorconvert, gldownload, videoscale, m_sink.get(), nullptr);
-        gst_element_link_many(m_src.get(), glcolorconvert, gldownload, videoscale, m_sink.get(), nullptr);
+        m_capsfilter = gst_element_factory_make("capsfilter", nullptr);
+        gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_src.get(), glcolorconvert, m_capsfilter.get(), gldownload, videoconvert, m_sink.get(), nullptr);
+        gst_element_link_many(m_src.get(), glcolorconvert, m_capsfilter.get(), gldownload, videoconvert, m_sink.get(), nullptr);
         break;
     }
     case Type::DMABufMemory: {
         auto glupload = makeGStreamerElement("glupload"_s);
-        m_capsfilter = makeGStreamerElement("capsfilter"_s);
+        m_capsfilter = gst_element_factory_make("capsfilter", nullptr);
         auto glcolorconvert = makeGStreamerElement("glcolorconvert"_s);
         auto gldownload = makeGStreamerElement("gldownload"_s);
-        auto videoscale = makeGStreamerElement("videoscale"_s);
-        m_pipeline = gst_element_factory_make("pipeline", "video-frame-converter-gl");
-        gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_src.get(), glupload, m_capsfilter.get(), glcolorconvert, gldownload, videoscale, m_sink.get(), nullptr);
-        gst_element_link_many(m_src.get(), glupload, m_capsfilter.get(), glcolorconvert, gldownload, videoscale, m_sink.get(), nullptr);
+        auto videoconvert = makeGStreamerElement("videoconvert"_s);
+        m_pipeline = gst_element_factory_make("pipeline", "video-frame-converter-dmabuf");
+        gst_bin_add_many(GST_BIN_CAST(m_pipeline.get()), m_src.get(), glupload, m_capsfilter.get(), glcolorconvert, gldownload, videoconvert, m_sink.get(), nullptr);
+        gst_element_link_many(m_src.get(), glupload, m_capsfilter.get(), glcolorconvert, gldownload, videoconvert, m_sink.get(), nullptr);
+        break;
     }
 #endif
     }
@@ -96,12 +98,10 @@ GRefPtr<GstSample> GStreamerVideoFrameConverter::Pipeline::run(const GRefPtr<Gst
         if (!setGstElementGLContext(m_pipeline.get(), "gst.gl.app_context"_s))
             return nullptr;
 
-        if (m_type == Type::DMABufMemory) {
-            GRefPtr<GstCaps> outputCaps = adoptGRef(gst_caps_copy(destinationCaps));
-            gst_caps_set_features(outputCaps.get(), 0, gst_caps_features_new(GST_CAPS_FEATURE_MEMORY_GL_MEMORY, nullptr));
-            gst_caps_set_simple(outputCaps.get(), "format", G_TYPE_STRING, "RGBA", nullptr);
-            g_object_set(m_capsfilter.get(), "caps", outputCaps.get(), nullptr);
-        }
+        GRefPtr<GstCaps> outputCaps = adoptGRef(gst_caps_copy(destinationCaps));
+        gst_caps_set_features(outputCaps.get(), 0, gst_caps_features_new(GST_CAPS_FEATURE_MEMORY_GL_MEMORY, nullptr));
+        gst_caps_set_simple(outputCaps.get(), "format", G_TYPE_STRING, "RGBA", nullptr);
+        g_object_set(m_capsfilter.get(), "caps", outputCaps.get(), nullptr);
     }
 #endif
 
