@@ -825,12 +825,8 @@ GstMappedFrame::GstMappedFrame(GstMappedFrame&& other)
 {
     std::swap(m_frame, other.m_frame);
     other.m_frame.buffer = nullptr;
-}
-
-GstMappedFrame::GstMappedFrame(GstBuffer* buffer, const GstVideoInfo* info, GstMapFlags flags)
-{
-    // This cast can be removed once the GStreamer minimum version is raised to 1.20
-    gst_video_frame_map(&m_frame, const_cast<GstVideoInfo*>(info), buffer, flags);
+    std::swap(m_alignment, other.m_alignment);
+    std::swap(m_planeSizes, other.m_planeSizes);
 }
 
 GstMappedFrame::GstMappedFrame(const GRefPtr<GstSample>& sample, GstMapFlags flags)
@@ -839,7 +835,11 @@ GstMappedFrame::GstMappedFrame(const GRefPtr<GstSample>& sample, GstMapFlags fla
     if (!gst_video_info_from_caps(&info, gst_sample_get_caps(sample.get())))
         return;
 
-    gst_video_frame_map(&m_frame, &info, gst_sample_get_buffer(sample.get()), flags);
+    if (!gst_video_frame_map(&m_frame, &info, gst_sample_get_buffer(sample.get()), flags))
+        return;
+
+    gst_video_alignment_reset(&m_alignment);
+    gst_video_info_align_full(&info, &m_alignment, m_planeSizes.data());
 }
 
 GstMappedFrame::~GstMappedFrame()
@@ -908,7 +908,7 @@ std::span<uint8_t> GstMappedFrame::planeData(uint32_t planeIndex) const
     WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN; // GLib port
     auto data = reinterpret_cast<uint8_t*>(GST_VIDEO_FRAME_PLANE_DATA(&m_frame, planeIndex));
     WTF_ALLOW_UNSAFE_BUFFER_USAGE_END;
-    return unsafeMakeSpan(data, height() * planeStride(planeIndex));
+    return unsafeMakeSpan(data, planeHeight(planeIndex) * planeStride(planeIndex));
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN; // GLib port
@@ -916,6 +916,12 @@ int GstMappedFrame::planeStride(uint32_t planeIndex) const
 {
     RELEASE_ASSERT(isValid());
     return GST_VIDEO_FRAME_PLANE_STRIDE(&m_frame, planeIndex);
+}
+
+size_t GstMappedFrame::planeHeight(uint32_t planeIndex) const
+{
+    RELEASE_ASSERT(isValid());
+    return GST_VIDEO_INFO_PLANE_HEIGHT(&m_frame.info, planeIndex, m_planeSizes.data());
 }
 
 #if USE(GSTREAMER_GL)

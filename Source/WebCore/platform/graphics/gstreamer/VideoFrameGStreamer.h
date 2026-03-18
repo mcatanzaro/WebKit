@@ -79,7 +79,7 @@ public:
 
     GRefPtr<GstSample> downloadSample(std::optional<GstVideoFormat> = { });
 
-    GstSample* sample() const { return m_sample.get(); }
+    const GRefPtr<GstSample>& sample() const LIFETIME_BOUND { return m_sample; }
 
     RefPtr<ImageGStreamer> convertToImage();
 

@@ -224,7 +224,6 @@ class GstMappedFrame {
 
 public:
     GstMappedFrame(GstMappedFrame&&);
-    GstMappedFrame(GstBuffer*, const GstVideoInfo*, GstMapFlags);
     GstMappedFrame(const GRefPtr<GstSample>&, GstMapFlags);
 
     ~GstMappedFrame();
@@ -243,6 +242,7 @@ public:
     int format() const;
     std::span<uint8_t> planeData(uint32_t) const;
     int planeStride(uint32_t) const;
+    size_t planeHeight(uint32_t) const;
 
     bool isValid() const { return m_frame.buffer; }
     explicit operator bool() const { return m_frame.buffer; }
@@ -257,6 +257,8 @@ public:
 
 private:
     GstVideoFrame m_frame;
+    GstVideoAlignment m_alignment;
+    std::array<size_t, GST_VIDEO_MAX_PLANES> m_planeSizes { };
 };
 
 class GstMappedAudioBuffer {

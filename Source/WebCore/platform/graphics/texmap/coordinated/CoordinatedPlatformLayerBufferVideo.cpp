@@ -102,7 +102,9 @@ std::unique_ptr<CoordinatedPlatformLayerBuffer> CoordinatedPlatformLayerBufferVi
     // When not having a texture, we map the frame here and upload the pixels to a texture in the
     // compositor thread, in paintToTextureMapper(), which also allows us to use the texture mapper
     // bitmap texture pool.
-    m_videoFrame.emplace(GstMappedFrame(buffer, videoInfo, GST_MAP_READ));
+    auto caps = adoptGRef(gst_video_info_to_caps(videoInfo));
+    auto sample = adoptGRef(gst_sample_new(buffer, caps.get(), nullptr, nullptr));
+    m_videoFrame.emplace(GstMappedFrame(sample, GST_MAP_READ));
     if (!*m_videoFrame) {
         // If mapping failed, clear the GstMappedFrame holder.
         m_videoFrame = std::nullopt;
@@ -207,7 +209,9 @@ std::unique_ptr<CoordinatedPlatformLayerBuffer> CoordinatedPlatformLayerBufferVi
 #if USE(GSTREAMER_GL)
 std::unique_ptr<CoordinatedPlatformLayerBuffer> CoordinatedPlatformLayerBufferVideo::createBufferFromGLMemory(GstBuffer* buffer, const GstVideoInfo* videoInfo)
 {
-    m_videoFrame.emplace(GstMappedFrame(buffer, videoInfo, static_cast<GstMapFlags>(GST_MAP_READ | GST_MAP_GL)));
+    auto caps = adoptGRef(gst_video_info_to_caps(videoInfo));
+    auto sample = adoptGRef(gst_sample_new(buffer, caps.get(), nullptr, nullptr));
+    m_videoFrame.emplace(GstMappedFrame(sample, static_cast<GstMapFlags>(GST_MAP_READ | GST_MAP_GL)));
     if (!*m_videoFrame) {
         // If mapping failed, clear the GstMappedFrame holder.
         m_videoFrame = std::nullopt;
