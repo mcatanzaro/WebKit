@@ -1,3 +1,15 @@
+================
+WebKitGTK 2.52.0
+================
+
+What's new in WebKitGTK 2.52.0?
+
+  - Make scrolling with touch input smoother for small movements.
+  - Fix estimated load progress of downloads when Content-Length value is wrong.
+  - Ensure that "scrollend" events are correctly emitted after scroll animations.
+  - Fix several crashes and rendering issues.
+  - Translation updates: Japanese, Kazakh, Swedish.
+
 =================
 WebKitGTK 2.51.93
 =================
