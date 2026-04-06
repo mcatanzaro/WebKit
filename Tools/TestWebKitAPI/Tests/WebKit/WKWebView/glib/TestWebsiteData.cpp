@@ -22,11 +22,16 @@
 #include "WebKitTestServer.h"
 #include "WebViewTest.h"
 #include <WebCore/GUniquePtrSoup.h>
+#include <WebCore/SoupVersioning.h>
 #include <glib/gstdio.h>
 
 static WebKitTestServer* kServer;
 
+#if USE(SOUP2)
+static void serverCallback(SoupServer* server, SoupMessage* message, const char* path, GHashTable*, SoupClientContext*, gpointer)
+#else
 static void serverCallback(SoupServer* server, SoupServerMessage* message, const char* path, GHashTable*, gpointer)
+#endif
 {
     if (soup_server_message_get_method(message) != SOUP_METHOD_GET) {
         soup_server_message_set_status(message, SOUP_STATUS_NOT_IMPLEMENTED, nullptr);
@@ -587,6 +592,7 @@ static void testWebsiteDataDatabases(WebsiteDataTest* test, gconstpointer)
     g_assert_null(dataList);
 }
 
+#if SOUP_CHECK_VERSION(2, 67, 91)
 static void prepopulateHstsData()
 {
     // HSTS headers will be ignored in this test because the spec forbids STS policies from being honored for hosts with
@@ -628,6 +634,7 @@ static void testWebsiteDataHsts(WebsiteDataTest* test, gconstpointer)
     test->clear(WEBKIT_WEBSITE_DATA_HSTS_CACHE, 0);
     g_assert_null(test->fetch(WEBKIT_WEBSITE_DATA_HSTS_CACHE));
 }
+#endif
 
 static void testWebsiteDataCookies(WebsiteDataTest* test, gconstpointer)
 {
@@ -954,7 +961,9 @@ void beforeAll()
     kServer = new WebKitTestServer();
     kServer->run(serverCallback);
 
+#if SOUP_CHECK_VERSION(2, 67, 91)
     prepopulateHstsData();
+#endif
 
     WebsiteDataTest::add("WebKitWebsiteData", "configuration", testWebsiteDataConfiguration);
     WebViewTest::add("WebKitWebsiteData", "ephemeral", testWebsiteDataEphemeral);
@@ -962,7 +971,9 @@ void beforeAll()
     WebsiteDataTest::add("WebKitWebsiteData", "storage", testWebsiteDataStorage);
     WebsiteDataTest::add("WebKitWebsiteData", "databases", testWebsiteDataDatabases);
     WebsiteDataTest::add("WebKitWebsiteData", "cookies", testWebsiteDataCookies);
+#if SOUP_CHECK_VERSION(2, 67, 91)
     WebsiteDataTest::add("WebKitWebsiteData", "hsts", testWebsiteDataHsts);
+#endif
     WebsiteDataTest::add("WebKitWebsiteData", "deviceidhashsalt", testWebsiteDataDeviceIdHashSalt);
     WebsiteDataTest::add("WebKitWebsiteData", "itp", testWebsiteDataITP);
     WebsiteDataTest::add("WebKitWebsiteData", "service-worker-registrations", testWebsiteDataServiceWorkerRegistrations);

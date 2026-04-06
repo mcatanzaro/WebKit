@@ -101,7 +101,11 @@ public:
 private:
     friend class ResourceRequestBase;
 
+#if USE(SOUP2)
+    GUniquePtr<SoupURI> createSoupURI() const;
+#else
     GRefPtr<GUri> createSoupURI() const;
+#endif
 
     void doUpdatePlatformRequest() { }
     void doUpdateResourceRequest() { }
