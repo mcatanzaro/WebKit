@@ -31,6 +31,7 @@
 
 #include "GetComposedRangesOptions.h"
 #include "LocalDOMWindowProperty.h"
+#include "ShadowRoot.h"
 #include <wtf/Forward.h>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
