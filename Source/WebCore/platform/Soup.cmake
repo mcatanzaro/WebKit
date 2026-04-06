@@ -19,4 +19,10 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/network/soup/URLSoup.h
 )
 
-list(APPEND WebCore_LIBRARIES Soup3::Soup3)
+list(APPEND WebCore_SYSTEM_INCLUDE_DIRECTORIES
+    ${LIBSOUP_INCLUDE_DIRS}
+)
+
+list(APPEND WebCore_LIBRARIES
+    ${LIBSOUP_LIBRARIES}
+)

@@ -34,6 +34,7 @@ endif ()
 set(WebKitGLibAPITests_SYSTEM_INCLUDE_DIRECTORIES
     ${GSTREAMER_AUDIO_INCLUDE_DIRS}
     ${GSTREAMER_INCLUDE_DIRS}
+    ${LIBSOUP_INCLUDE_DIRS}
 )
 
 set(WebKitAPITest_LIBRARIES
@@ -45,8 +46,8 @@ set(WebKitGLibAPITestsCore_LIBRARIES
 )
 
 set(WebKitGLibAPITest_LIBRARIES
+    ${LIBSOUP_LIBRARIES}
     ${WebKitAPITest_LIBRARIES}
-    Soup3::Soup3
     WebKitGLibAPITestsCore
 )
 
@@ -232,6 +233,7 @@ if (PORT STREQUAL "WPE" AND ENABLE_WPE_QT_API)
         ${CMAKE_BINARY_DIR}
         ${JavaScriptCoreGLib_DERIVED_SOURCES_DIR}
         ${JavaScriptCoreGLib_FRAMEWORK_HEADERS_DIR}
+        ${LIBSOUP_INCLUDE_DIRS}
         ${TOOLS_DIR}/TestWebKitAPI
         ${WEBKIT_DIR}/WPEPlatform
         ${WPEPlatform_DERIVED_SOURCES_DIR}
