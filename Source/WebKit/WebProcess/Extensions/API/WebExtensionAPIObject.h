@@ -99,6 +99,7 @@ private:
 
 } // namespace WebKit
 
+#if PLATFORM(COCOA)
 #define WEB_EXTENSION_DECLARE_JS_WRAPPER_CLASS(ImplClass, ScriptClass, PropertyName) \
 public: \
     template<typename... Args> \
@@ -135,6 +136,10 @@ private: \
     JSClassRef wrapperClass() const final { return JS##ImplClass::ScriptClass##ClassSingleton(); } \
 \
     using __thisIsHereToForceASemicolonAfterThisMacro UNUSED_TYPE_ALIAS = int
+#else
+// FIXME: Remove this when CodeGeneratorExtensions.pm is able to generate C++ instead of Objective C++.
+#define WEB_EXTENSION_DECLARE_JS_WRAPPER_CLASS(ImplClass, ScriptClass, PropertyName)
+#endif
 
 // End of macro.
 

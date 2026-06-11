@@ -190,6 +190,7 @@ using namespace WTF;
 class ${implementationClassName};
 
 class ${className} : public ${parentClassName} {
+#if PLATFORM(COCOA)
 public:
     static JSClassRef @{[$self->_classRefGetter($idlType)]}();
     static JSClassRef @{[$self->_classRefGetter($idlType, "GlobalObjectClass")]}();
@@ -256,10 +257,13 @@ EOF
         push(@contents, "    static JSValueRef getProperty(JSContextRef, JSObjectRef, JSStringRef, JSValueRef*);\n");
     }
 
+    push(@contents, "#endif // PLATFORM(COCOA)\n");
     push(@contents, <<EOF);
 };
 
+#if PLATFORM(COCOA)
 ${implementationClassName}* to${implementationClassName}(JSContextRef, JSValueRef);
+#endif
 
 } // namespace WebKit
 

@@ -199,6 +199,8 @@ void WebExtensionContextProxy::setContentScriptWorld(WebCore::DOMWrapperWorld& w
 
 void WebExtensionContextProxy::enumerateFramesAndNamespaceObjects(NOESCAPE const Function<void(WebFrame&, WebExtensionAPINamespace&)>& function, Ref<DOMWrapperWorld>&& world)
 {
+    // FIXME: Remove the PLATFORM(COCOA) guard when CodeGeneratorExtensions.pm is able to generate C++ instead of Objective C++.
+#if PLATFORM(COCOA)
     m_extensionContentFrames.forEach([&](auto& frame) {
         RefPtr page = frame.page() ? frame.page()->corePage() : nullptr;
         if (!page)
@@ -227,10 +229,13 @@ void WebExtensionContextProxy::enumerateFramesAndNamespaceObjects(NOESCAPE const
 
         function(frame, *namespaceObjectImpl);
     });
+#endif
 }
 
 void WebExtensionContextProxy::enumerateFramesAndWebPageNamespaceObjects(NOESCAPE const Function<void(WebFrame&, WebExtensionAPIWebPageNamespace&)>& function)
 {
+    // FIXME: Remove the PLATFORM(COCOA) guard when CodeGeneratorExtensions.pm is able to generate C++ instead of Objective C++.
+#if PLATFORM(COCOA)
     m_extensionContentFrames.forEach([&](auto& frame) {
         auto context = frame.jsContextForWorld(mainWorldSingleton());
         auto globalObject = JSContextGetGlobalObject(context);
@@ -245,6 +250,7 @@ void WebExtensionContextProxy::enumerateFramesAndWebPageNamespaceObjects(NOESCAP
 
         function(frame, *namespaceObjectImpl);
     });
+#endif
 }
 
 } // namespace WebKit

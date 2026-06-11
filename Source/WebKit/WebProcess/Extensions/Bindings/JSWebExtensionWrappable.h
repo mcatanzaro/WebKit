@@ -42,9 +42,17 @@ public:
 
 } // namespace WebKit
 
+#if PLATFORM(COCOA)
 #define SPECIALIZE_TYPE_TRAITS_WEB_EXTENSION(ImplClass, ScriptClass) \
 SPECIALIZE_TYPE_TRAITS_BEGIN(WebKit::ImplClass) \
 static bool isType(const WebKit::JSWebExtensionWrappable& wrappable) { return wrappable.wrapperClass() == WebKit::JS##ImplClass::ScriptClass##ClassSingleton(); } \
 SPECIALIZE_TYPE_TRAITS_END()
+#else
+// FIXME: Remove this when CodeGeneratorExtensions.pm is able to generate C++ instead of Objective C++.
+#define SPECIALIZE_TYPE_TRAITS_WEB_EXTENSION(ImplClass, ScriptClass) \
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebKit::ImplClass) \
+static bool isType(const WebKit::JSWebExtensionWrappable& wrappable) { return false; } \
+SPECIALIZE_TYPE_TRAITS_END()
+#endif
 
 #endif // ENABLE(WK_WEB_EXTENSIONS)
