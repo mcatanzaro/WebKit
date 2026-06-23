@@ -263,7 +263,7 @@ static Color switchTrackColor(const RenderObject& renderer)
     Ref element = switchElement(renderer);
 
     auto isOn = element->isSwitchVisuallyOn();
-    auto isHighContrast = Theme::singleton().userPrefersContrast();
+    auto isHighContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     auto isDark = styleColorOptions.contains(StyleColorOptions::UseDarkAppearance);
     auto progress = easeInOut(element->switchAnimationVisuallyOnProgress());
 
@@ -352,7 +352,7 @@ static void paintSwitchTrackOnOffLabels(OptionSet<ControlStyle::State> states, c
     Ref element = switchElement(renderer);
 
     auto isOn = element->isSwitchVisuallyOn();
-    auto isHighContrast = Theme::singleton().userPrefersContrast();
+    auto isHighContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     auto isInlineFlipped = states.contains(ControlStyle::State::InlineFlippedWritingMode);
     auto isVertical = states.contains(ControlStyle::State::VerticalWritingMode);
     auto isEnabled = states.contains(ControlStyle::State::Enabled);
@@ -501,7 +501,7 @@ static void paintLiquidGlassSwitchTrackOnOffLabels(OptionSet<ControlStyle::State
     const auto zoomScale = style->usedZoom();
 
     auto isOn = element->isSwitchVisuallyOn();
-    auto isHighContrast = Theme::singleton().userPrefersContrast();
+    auto isHighContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     auto isInlineFlipped = states.contains(ControlStyle::State::InlineFlippedWritingMode);
     auto isVertical = states.contains(ControlStyle::State::VerticalWritingMode);
     auto isEnabled = states.contains(ControlStyle::State::Enabled);
@@ -666,7 +666,7 @@ static bool renderThemePaintLiquidGlassSwitchThumb(OptionSet<ControlStyle::State
 
     context.restore();
 
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         drawHighContrastOutline(context, thumbPath, renderer.styleColorOptions());
 #else
     const auto shadowColor = SRGBA<uint8_t> { 0, 0, 0, static_cast<uint8_t>(30.63 * shadowOpacityMultiplier) }; // opacity 0.12f
@@ -721,7 +721,7 @@ static bool renderThemePaintLiquidGlassSwitchTrack(OptionSet<ControlStyle::State
         paintLiquidGlassSwitchTrackOnOffLabels(states, renderer, paintInfo, trackRect);
 
 #if PLATFORM(MAC)
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         drawHighContrastOutline(context, trackPath, styleColorOptions);
 
     // On macOS, the track color in the on-state and the focus ring color are almost
@@ -2083,7 +2083,7 @@ bool RenderThemeCocoa::paintCheckboxForVectorBasedControls(const RenderElement& 
     context.fillPath(glyphPath);
 
 #if PLATFORM(MAC)
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         drawHighContrastOutline(context, path, box.styleColorOptions());
 #endif
 
@@ -2152,7 +2152,7 @@ bool RenderThemeCocoa::paintRadioForVectorBasedControls(const RenderElement& box
         context.fillEllipse(innerCircleRect);
 
 #if PLATFORM(MAC)
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         drawHighContrastOutline(context, boundingPath, box.styleColorOptions());
 #endif
     } else if (!isVision) {
@@ -2214,7 +2214,7 @@ bool RenderThemeCocoa::paintButtonForVectorBasedControls(const RenderElement& bo
     const auto boundingRect = buttonShape.boundingRect;
 
 #if PLATFORM(MAC)
-    const auto userPrefersContrast = Theme::singleton().userPrefersContrast();
+    const auto userPrefersContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     const auto borderColor = userPrefersContrast ? highContrastOutlineColor(styleColorOptions) : systemColor(CSSValueWebkitControlBackground, styleColorOptions);
 #else
     const auto borderColor = systemColor(CSSValueWebkitControlBackground, styleColorOptions);
@@ -2272,7 +2272,7 @@ bool RenderThemeCocoa::paintColorWellForVectorBasedControls(const RenderElement&
     context.fillRoundedRect(boundingRoundedRect, backgroundColor);
 
 #if PLATFORM(MAC)
-    if (Theme::singleton().userPrefersContrast()) {
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast) {
         Path path;
         path.addRoundedRect(boundingRoundedRect);
         drawHighContrastOutline(context, path, box.styleColorOptions());
@@ -2721,7 +2721,7 @@ bool RenderThemeCocoa::paintInnerSpinButtonForVectorBasedControls(const RenderEl
     context.fillPath(path);
 
 #if PLATFORM(MAC)
-    const auto userPrefersContrast = Theme::singleton().userPrefersContrast();
+    const auto userPrefersContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
 
     if (userPrefersContrast)
         drawHighContrastOutline(context, path, styleColorOptions);
@@ -3085,7 +3085,7 @@ static bool paintTextAreaOrTextField(const RenderElement& box, const PaintInfo& 
     const auto styleColorOptions = box.styleColorOptions();
     auto backgroundColor = style->visitedDependentBackgroundColor();
 #if PLATFORM(MAC)
-    const auto prefersContrast = Theme::singleton().userPrefersContrast();
+    const auto prefersContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     auto borderColor = prefersContrast ? highContrastOutlineColor(styleColorOptions) : RenderTheme::singleton().systemColor(CSSValueAppleSystemContainerBorder, styleColorOptions);
 #else
     auto borderColor = RenderTheme::singleton().systemColor(CSSValueAppleSystemContainerBorder, styleColorOptions);
@@ -3528,7 +3528,7 @@ bool RenderThemeCocoa::paintMeterForVectorBasedControls(const RenderElement& ren
     auto isHorizontalWritingMode = renderer.writingMode().isHorizontal();
 
 #if PLATFORM(MAC)
-    const auto userPrefersContrast = Theme::singleton().userPrefersContrast();
+    const auto userPrefersContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     FloatRoundedRect boundingRoundedRect = roundedFillRect;
     if (userPrefersContrast)
         context.save();
@@ -3708,7 +3708,7 @@ bool RenderThemeCocoa::paintListButtonForVectorBasedControls(const RenderElement
     context.setFillColor(backgroundColor);
     context.fillPath(backgroundPath);
 
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         drawHighContrastOutline(context, backgroundPath, styleColorOptions);
 #endif
 
@@ -4175,7 +4175,7 @@ bool RenderThemeCocoa::paintSliderThumbForVectorBasedControls(const RenderElemen
     context.fillPath(sliderThumbPath);
 
 #if PLATFORM(MAC)
-    if (Theme::singleton().userPrefersContrast()) {
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast) {
         drawHighContrastOutline(context, sliderThumbPath, styleColorOptions);
         return true;
     }
@@ -4218,7 +4218,7 @@ bool RenderThemeCocoa::paintSearchFieldForVectorBasedControls(const RenderElemen
     const auto isEnabled = states.contains(ControlStyle::State::Enabled);
 
 #if PLATFORM(MAC)
-    auto userPrefersContrast = Theme::singleton().userPrefersContrast();
+    auto userPrefersContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast;
     auto isDarkMode = box.styleColorOptions().contains(StyleColorOptions::UseDarkAppearance);
     Color borderColor;
     if (userPrefersContrast)
@@ -4332,7 +4332,7 @@ bool RenderThemeCocoa::paintSearchFieldCancelButtonForVectorBasedControls(const 
     const auto isDarkMode = styleColorOptions.contains(StyleColorOptions::UseDarkAppearance);
 
     Color fillColor;
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         fillColor = highContrastOutlineColor(styleColorOptions);
     else {
         fillColor = isDarkMode ? SRGBA<uint8_t> { 161, 161, 161 } : SRGBA<uint8_t> { 76, 76, 76, 216 };
@@ -4395,7 +4395,7 @@ bool RenderThemeCocoa::paintSearchFieldDecorationPartForVectorBasedControls(cons
     // In dark mode, the high contrast color is darker than white, which is what
     // we use if "Increase contrast" was off. To avoid decreasing contrast in this case,
     // only behave as if "Increase contrast" is enabled when not in dark mode.
-    auto userPrefersContrast = Theme::singleton().userPrefersContrast()  && !isDarkMode;
+    auto userPrefersContrast = Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast && !isDarkMode;
     auto hasSearchResults = input && input->maxResults() > 0;
 
     auto color = userPrefersContrast ? highContrastOutlineColor(styleColorOptions) : (isDarkMode ? colorForDarkMode : colorForLightMode);
@@ -4560,7 +4560,7 @@ bool RenderThemeCocoa::paintPlatformResizerForVectorBasedControls(const RenderLa
     const auto styleColorOptions = renderer.styleColorOptions();
 
     Color resizerColor;
-    if (Theme::singleton().userPrefersContrast())
+    if (Theme::singleton().userPreferredContrast() == InterfaceContrastPreference::MoreContrast)
         resizerColor = highContrastOutlineColor(styleColorOptions);
     else
         resizerColor = systemColor(CSSValueAppleSystemSecondaryLabel, styleColorOptions);
