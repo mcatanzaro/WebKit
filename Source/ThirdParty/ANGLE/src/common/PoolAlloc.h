@@ -10,12 +10,11 @@
 #ifndef COMMON_POOLALLOC_H_
 #define COMMON_POOLALLOC_H_
 
-// This include MUST precede the ANGLE_WITH_ASAN / ANGLE_WITH_TSAN check below
-// to define those macros.
+// This include MUST precede the ANGLE_WITH_TSAN check below to define that macro.
 #include "common/platform.h"
 
-#if defined(ANGLE_WITH_ASAN) || defined(ANGLE_WITH_TSAN)
-#    define ANGLE_DISABLE_POOL_ALLOC  // Use system allocator under sanitizers for accurate detection
+#if defined(ANGLE_WITH_TSAN)
+#    define ANGLE_DISABLE_POOL_ALLOC
 #elif !defined(NDEBUG)
 #    define ANGLE_POOL_ALLOC_GUARD_BLOCKS  // define to enable guard block checking
 #endif
