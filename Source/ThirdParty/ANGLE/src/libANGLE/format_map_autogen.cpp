@@ -762,8 +762,18 @@ bool ValidES3FormatCombination(GLenum format, GLenum type, GLenum internalFormat
                     {
                         case GL_DEPTH_COMPONENT24:
                         case GL_DEPTH_COMPONENT16:
-                        case GL_DEPTH_COMPONENT32_OES:
                         case GL_DEPTH_COMPONENT:
+                            return true;
+                        default:
+                            break;
+                    }
+                    break;
+                }
+                case GL_UNSIGNED_INT_24_8:
+                {
+                    switch (internalFormat)
+                    {
+                        case GL_DEPTH_COMPONENT32_OES:
                             return true;
                         default:
                             break;
