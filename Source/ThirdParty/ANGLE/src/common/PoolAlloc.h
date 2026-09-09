@@ -43,20 +43,11 @@
 #include <utility>
 #include <vector>
 
+#include "common/MemoryTagging.h"
 #include "common/angleutils.h"
 #include "common/log_utils.h"
 #include "common/mathutil.h"
 #include "common/span.h"
-#ifdef ANGLE_PLATFORM_APPLE
-#    if __has_include(<CoreFoundation/CFPriv.h>) // Matches USE_APPLE_INTERNAL_SDK in WTF.
-#        include <WebKitAdditions/ANGLEAllocProfile.h>
-#    endif
-#endif
-
-#if !defined(ANGLE_ALLOC_PROFILE)
-#    define ANGLE_ALLOC_PROFILE(kind, ...)
-#    define ANGLE_ALLOC_PROFILE_ALIGNMENT(x) (x)
-#endif
 
 namespace angle
 {
@@ -76,7 +67,12 @@ class PoolAllocator : angle::NonCopyable
     void reset();
 
   private:
-    static constexpr size_t kAlignment = ANGLE_ALLOC_PROFILE_ALIGNMENT(sizeof(void *));
+#if defined(ANGLE_ENABLE_MEMORY_TAGGING)
+    // The allocations are tagged, so they are aligned to a memory tag granule.
+    static constexpr size_t kAlignment = kMemoryTagGranuleSize;
+#else
+    static constexpr size_t kAlignment = sizeof(void *);
+#endif
     Span<uint8_t> allocateSingleObject(size_t size);
     class Segment;
     std::vector<Segment> mSingleObjectSegments;  // Large objects.
@@ -116,7 +112,7 @@ inline void *PoolAllocator::allocate(size_t size)
     {
         data         = mCurrentPool.first(extent);
         mCurrentPool = mCurrentPool.subspan(extent);
-        ANGLE_ALLOC_PROFILE(LOCAL_BUMP_ALLOCATION, data, false);
+        data         = TagMemory(data);
     }
     else if (extent < kSegmentSize)
     {
@@ -126,7 +122,7 @@ inline void *PoolAllocator::allocate(size_t size)
         }
         data         = mCurrentPool.first(extent);
         mCurrentPool = mCurrentPool.subspan(extent);
-        ANGLE_ALLOC_PROFILE(LOCAL_BUMP_ALLOCATION, data, false);
+        data         = TagMemory(data);
     }
     else
 #endif
