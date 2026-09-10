@@ -1,6 +1,7 @@
 /*
  *  Copyright (C) 2003-2026 Apple Inc. All rights reserved.
  *  Copyright (C) 2007 Eric Seidel <eric@webkit.org>
+ *  Copyright (C) 2026 Igalia S.L.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -109,6 +110,7 @@
 #include <wtf/Scope.h>
 #include <wtf/SetForScope.h>
 #include <wtf/SimpleStats.h>
+#include <wtf/SpinBackoff.h>
 #include <wtf/SystemTracing.h>
 #include <wtf/TZoneMallocInlines.h>
 #include <wtf/Threading.h>
@@ -1967,6 +1969,7 @@ NEVER_INLINE void Heap::resumeThePeriphery()
             visitorsToUpdate.append(&visitor);
         });
     
+    SpinBackoff backoff;
     for (unsigned countdown = 40; !visitorsToUpdate.isEmpty() && countdown--;) {
         for (unsigned index = 0; index < visitorsToUpdate.size(); ++index) {
             SlotVisitor& visitor = *visitorsToUpdate[index];
@@ -1983,7 +1986,7 @@ NEVER_INLINE void Heap::resumeThePeriphery()
                 visitorsToUpdate.takeLast();
             }
         }
-        Thread::yield();
+        backoff.spinOnce();
     }
     
     for (SlotVisitor* visitor : visitorsToUpdate)
