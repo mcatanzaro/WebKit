@@ -163,15 +163,6 @@ option(ENABLE_UNSAFE_BUFFER_USAGE_WARNING "Build with -Wunsafe-buffer-usage" OFF
 
 option(ENABLE_THREAD_SAFETY_WARNING "Build with -Wthread-safety" OFF)
 
-option(DEVELOPER_MODE_FATAL_WARNINGS "Build with warnings as errors if DEVELOPER_MODE is also enabled" ON)
-if (DEVELOPER_MODE AND DEVELOPER_MODE_FATAL_WARNINGS)
-    if (MSVC)
-        WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(/WX)
-    elseif (COMPILER_IS_GCC_OR_CLANG)
-        WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-Werror)
-    endif ()
-endif ()
-
 if (DEVELOPER_MODE OR ARM)
     # This lets us get good backtraces, in particular when using JSC_useGdbJITInfo=1.
     WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-fno-omit-frame-pointer)

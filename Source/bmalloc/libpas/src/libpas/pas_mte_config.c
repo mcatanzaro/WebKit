@@ -74,10 +74,12 @@ extern const pas_heap_config iso_heap_config;
 #endif // PAS_ENABLE_ISO
 extern const pas_heap_config pas_utility_heap_config;
 
+#if PAS_ENABLE_MTE || PAS_OS(DARWIN)
 static inline bool pas_mte_is_mte_enabled_unchecked(void)
 {
     return PAS_RUNTIME_CONFIG_PTR->mte_state == pas_mte_state_enabled;
 }
+#endif
 
 #if defined(PAS_USE_OPENSOURCE_MTE) && PAS_USE_OPENSOURCE_MTE
 #if PAS_ENABLE_MTE
