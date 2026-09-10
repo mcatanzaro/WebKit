@@ -166,10 +166,19 @@ option(ENABLE_THREAD_SAFETY_WARNING "Build with -Wthread-safety" OFF)
 option(DEVELOPER_MODE_FATAL_WARNINGS "Build with warnings as errors if DEVELOPER_MODE is also enabled" ON)
 if (DEVELOPER_MODE AND DEVELOPER_MODE_FATAL_WARNINGS)
     if (MSVC)
-        WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(/WX)
+        set(FATAL_WARNING_FLAG "/WX")
     elseif (COMPILER_IS_GCC_OR_CLANG)
-        WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-Werror)
+        set(FATAL_WARNING_FLAG "-Werror")
     endif ()
+
+    # We cannot test whether the compiler supports a fatal warning flag because
+    # the probe programs used by the check are likely to trigger warnings.
+    string(PREPEND CMAKE_C_FLAGS "${FATAL_WARNING_FLAG} ")
+    string(PREPEND CMAKE_OBJC_FLAGS "${FATAL_WARNING_FLAG} ")
+    string(PREPEND CMAKE_CXX_FLAGS "${FATAL_WARNING_FLAG} ")
+    string(PREPEND CMAKE_OBJCXX_FLAGS "${FATAL_WARNING_FLAG} ")
+
+    unset(FATAL_WARNING_FLAG)
 endif ()
 
 if (DEVELOPER_MODE OR ARM)
