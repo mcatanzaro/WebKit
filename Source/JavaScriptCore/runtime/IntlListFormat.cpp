@@ -38,9 +38,7 @@
 #ifdef U_HIDE_DRAFT_API
 #undef U_HIDE_DRAFT_API
 #endif
-#include <unicode/ulistformatter.h>
 #define U_HIDE_DRAFT_API 1
-#include <unicode/uformattedvalue.h>
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
@@ -48,6 +46,7 @@ namespace JSC {
 
 const ClassInfo IntlListFormat::s_info = { "Object"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(IntlListFormat) };
 
+#if 0
 // We do not use ICUDeleter<ulistfmt_close> because we do not want to include ulistformatter.h in IntlListFormat.h.
 // ulistformatter.h needs to be included with #undef U_HIDE_DRAFT_API, and we would like to minimize this effect in IntlListFormat.cpp.
 void UListFormatterDeleter::operator()(UListFormatter* formatter)
@@ -55,6 +54,7 @@ void UListFormatterDeleter::operator()(UListFormatter* formatter)
     if (formatter)
         ulistfmt_close(formatter);
 }
+#endif
 
 IntlListFormat* IntlListFormat::create(VM& vm, Structure* structure)
 {
@@ -79,6 +79,13 @@ void IntlListFormat::initializeListFormat(JSGlobalObject* globalObject, JSValue 
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(locales);
+    UNUSED_PARAM(optionsValue);
+
+    throwTypeError(globalObject, scope, "failed to initialize ListFormat"_s);
+    return;
+
+#if 0
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
 
@@ -139,8 +146,10 @@ void IntlListFormat::initializeListFormat(JSGlobalObject* globalObject, JSValue 
         throwTypeError(globalObject, scope, "failed to initialize ListFormat"_s);
         return;
     }
+#endif // 0
 }
 
+#if 0
 static Vector<String, 4> stringListFromIterable(JSGlobalObject* globalObject, JSValue iterable)
 {
     Vector<String, 4> result;
@@ -160,6 +169,7 @@ static Vector<String, 4> stringListFromIterable(JSGlobalObject* globalObject, JS
     });
     return result;
 }
+#endif // 0
 
 // https://tc39.es/proposal-intl-list-format/#sec-Intl.ListFormat.prototype.format
 JSValue IntlListFormat::format(JSGlobalObject* globalObject, JSValue list) const
@@ -167,6 +177,10 @@ JSValue IntlListFormat::format(JSGlobalObject* globalObject, JSValue list) const
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(list);
+    return throwTypeError(globalObject, scope, "failed to format list of strings"_s);
+
+#if 0
     auto stringList = stringListFromIterable(globalObject, list);
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -178,6 +192,7 @@ JSValue IntlListFormat::format(JSGlobalObject* globalObject, JSValue list) const
         return throwTypeError(globalObject, scope, "failed to format list of strings"_s);
 
     return jsString(vm, String(WTF::move(result)));
+#endif // 0
 }
 
 // https://tc39.es/proposal-intl-list-format/#sec-Intl.ListFormat.prototype.formatToParts
@@ -185,6 +200,11 @@ JSValue IntlListFormat::formatToParts(JSGlobalObject* globalObject, JSValue list
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
+
+    UNUSED_PARAM(list);
+    return throwTypeError(globalObject, scope, "failed to format list of strings"_s);
+
+#if 0
 
     auto stringList = stringListFromIterable(globalObject, list);
     RETURN_IF_EXCEPTION(scope, { });
@@ -268,6 +288,7 @@ JSValue IntlListFormat::formatToParts(JSGlobalObject* globalObject, JSValue list
     }
 
     return parts;
+#endif // 0
 }
 
 // https://tc39.es/proposal-intl-list-format/#sec-Intl.ListFormat.prototype.resolvedOptions

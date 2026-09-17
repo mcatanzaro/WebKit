@@ -36,8 +36,6 @@
 #undef U_HIDE_DRAFT_API
 #endif
 #include <unicode/upluralrules.h>
-#include <unicode/unumberformatter.h>
-#include <unicode/unumberrangeformatter.h>
 #define U_HIDE_DRAFT_API 1
 
 namespace JSC {
@@ -80,10 +78,12 @@ void IntlPluralRules::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
     Base::visitChildren(thisObject, visitor);
 
+#if 0
     if (thisObject->m_numberFormatter)
         visitor.reportExtraMemoryVisited(estimatedUNumberFormatterSize);
     if (thisObject->m_numberRangeFormatter)
         visitor.reportExtraMemoryVisited(estimatedUNumberRangeFormatterSize);
+#endif
     if (thisObject->m_pluralRules)
         visitor.reportExtraMemoryVisited(estimatedUPluralRulesSize);
 }
@@ -101,6 +101,13 @@ void IntlPluralRules::initializePluralRules(JSGlobalObject* globalObject, JSValu
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(locales);
+    UNUSED_PARAM(optionsValue);
+
+    throwTypeError(globalObject, scope, "failed to initialize PluralRules"_s);
+    return;
+
+#if 0
     Vector<String> requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
 
@@ -168,6 +175,7 @@ void IntlPluralRules::initializePluralRules(JSGlobalObject* globalObject, JSValu
     }
 
     vm.heap.reportExtraMemoryAllocated(this, estimatedUPluralRulesSize);
+#endif // 0
 }
 
 // https://tc39.es/ecma402/#sec-intl.pluralrules.prototype.resolvedoptions
@@ -253,6 +261,11 @@ JSValue IntlPluralRules::select(JSGlobalObject* globalObject, double value) cons
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(value);
+
+    return throwTypeError(globalObject, scope, "failed to select plural value"_s);
+
+#if 0
     if (!std::isfinite(value))
         return jsNontrivialString(vm, "other"_s);
 
@@ -269,8 +282,10 @@ JSValue IntlPluralRules::select(JSGlobalObject* globalObject, double value) cons
     if (U_FAILURE(status))
         return throwTypeError(globalObject, scope, "failed to select plural value"_s);
     return jsString(vm, String(WTF::move(buffer)));
+#endif // 0
 }
 
+#if 0
 JSValue IntlPluralRules::selectRange(JSGlobalObject* globalObject, double start, double end) const
 {
     ASSERT(m_numberRangeFormatter);
@@ -296,5 +311,6 @@ JSValue IntlPluralRules::selectRange(JSGlobalObject* globalObject, double start,
         return throwTypeError(globalObject, scope, "failed to select plural value"_s);
     return jsString(vm, String(WTF::move(buffer)));
 }
+#endif // 0
 
 } // namespace JSC

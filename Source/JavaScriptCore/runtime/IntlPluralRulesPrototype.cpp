@@ -33,7 +33,6 @@
 namespace JSC {
 
 static JSC_DECLARE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelect);
-static JSC_DECLARE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelectRange);
 static JSC_DECLARE_HOST_FUNCTION(intlPluralRulesPrototypeFuncResolvedOptions);
 
 }
@@ -47,7 +46,6 @@ const ClassInfo IntlPluralRulesPrototype::s_info = { "Intl.PluralRules"_s, &Base
 /* Source for IntlPluralRulesPrototype.lut.h
 @begin pluralRulesPrototypeTable
   select           intlPluralRulesPrototypeFuncSelect           DontEnum|Function 1
-  selectRange      intlPluralRulesPrototypeFuncSelectRange      DontEnum|Function 2
   resolvedOptions  intlPluralRulesPrototypeFuncResolvedOptions  DontEnum|Function 0
 @end
 */
@@ -95,6 +93,7 @@ JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelect, (JSGlobalObject* gl
     RELEASE_AND_RETURN(scope, JSValue::encode(pluralRules->select(globalObject, value)));
 }
 
+#if 0
 JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelectRange, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
@@ -119,6 +118,7 @@ JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelectRange, (JSGlobalObjec
 
     RELEASE_AND_RETURN(scope, JSValue::encode(pluralRules->selectRange(globalObject, start, end)));
 }
+#endif // 0
 
 JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
