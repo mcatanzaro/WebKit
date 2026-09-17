@@ -73,7 +73,6 @@ public:
 
     void initializePluralRules(JSGlobalObject*, JSValue locales, JSValue options);
     JSValue select(JSGlobalObject*, double value) const;
-    JSValue selectRange(JSGlobalObject*, double start, double end) const;
     JSObject* resolvedOptions(JSGlobalObject*) const;
 
 private:
@@ -85,8 +84,6 @@ private:
     enum class Type : bool { Cardinal, Ordinal };
 
     std::unique_ptr<UPluralRules, UPluralRulesDeleter> m_pluralRules;
-    std::unique_ptr<UNumberFormatter, UNumberFormatterDeleter> m_numberFormatter;
-    std::unique_ptr<UNumberRangeFormatter, UNumberRangeFormatterDeleter> m_numberRangeFormatter;
 
     String m_locale;
     unsigned m_minimumIntegerDigits { 1 };

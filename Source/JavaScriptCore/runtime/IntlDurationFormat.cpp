@@ -41,17 +41,14 @@
 #ifdef U_HIDE_DRAFT_API
 #undef U_HIDE_DRAFT_API
 #endif
-#include <unicode/ulistformatter.h>
-#include <unicode/unumberformatter.h>
 #include <unicode/ures.h>
 #define U_HIDE_DRAFT_API 1
-#include <unicode/uformattedvalue.h>
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 namespace JSC {
 namespace IntlDurationFormatInternal {
-static constexpr bool verbose = false;
+//static constexpr bool verbose = false;
 }
 
 static constexpr unsigned fractionalDigitsUndefinedValue = std::numeric_limits<unsigned>::max();
@@ -85,16 +82,19 @@ void IntlDurationFormat::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
     Base::visitChildren(thisObject, visitor);
 
+#if 0
     if (auto* cache = thisObject->m_formatterCache.get()) {
         for (auto& formatter : cache->m_formatters) {
             if (formatter)
                 visitor.reportExtraMemoryVisited(estimatedUNumberFormatterSize);
         }
     }
+#endif // 0
 }
 
 DEFINE_VISIT_CHILDREN(IntlDurationFormat);
 
+#if 0
 enum class StyleListKind : uint8_t { LongShortNarrow, LongShortNarrowNumeric, LongShortNarrowNumericTwoDigit  };
 static IntlDurationFormat::UnitData intlDurationUnitOptions(JSGlobalObject* globalObject, JSObject* options, TemporalUnit unit, PropertyName propertyName, PropertyName displayName, IntlDurationFormat::Style baseStyle, StyleListKind styleList, IntlDurationFormat::UnitStyle digitalBase, std::optional<IntlDurationFormat::UnitStyle> prevStyle)
 {
@@ -181,6 +181,7 @@ static constexpr StyleListKind styleLists[numberOfTemporalUnits] = {
     StyleListKind::LongShortNarrowNumeric,
     StyleListKind::LongShortNarrowNumeric,
 };
+#endif // 0
 
 static PropertyName NODELETE displayName(VM& vm, TemporalUnit unit)
 {
@@ -199,6 +200,13 @@ void IntlDurationFormat::initializeDurationFormat(JSGlobalObject* globalObject, 
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(locales);
+    UNUSED_PARAM(optionsValue);
+
+    throwTypeError(globalObject, scope, "failed to initialize DurationFormat"_s);
+    return;
+
+#if 0
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
 
@@ -289,6 +297,7 @@ void IntlDurationFormat::initializeDurationFormat(JSGlobalObject* globalObject, 
             return;
         }
     }
+#endif // 0
 }
 
 const String& IntlDurationFormat::numberingSystem() const
@@ -297,6 +306,8 @@ const String& IntlDurationFormat::numberingSystem() const
         m_numberingSystem = defaultNumberingSystemForLocale(m_dataLocale);
     return m_numberingSystem;
 }
+
+#if 0
 
 static String retrieveSeparator(const CString& locale, const String& numberingSystem)
 {
@@ -488,7 +499,7 @@ static Vector<Element> collectElements(JSGlobalObject* globalObject, const IntlD
 
         // 3.k. If style is "2-digit", then
         //     i. Perform ! CreateDataPropertyOrThrow(nfOpts, "minimumIntegerDigits", 2F).
-        skeletonBuilder.append(" integer-width/*"_s);
+        skeletonBuilder.append(" integer-width/"_s, WTF::ICU::majorVersion() >= 67 ? '*' : '+'); // Prior to ICU 67, use the symbol + instead of *.
         if (style == IntlDurationFormat::UnitStyle::TwoDigit)
             skeletonBuilder.append("00"_s);
         else
@@ -687,12 +698,19 @@ UNumberFormatter* IntlDurationFormat::createNumberFormatterIfNecessary(JSGlobalO
     return formatter.get();
 }
 
+#endif // 0
+
 // https://tc39.es/proposal-intl-duration-format/#sec-Intl.DurationFormat.prototype.format
 JSValue IntlDurationFormat::format(JSGlobalObject* globalObject, ISO8601::Duration duration) const
 {
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(duration);
+
+    return throwTypeError(globalObject, scope, "failed to format list of strings"_s);
+
+#if 0
     auto elements = collectElements(globalObject, this, WTF::move(duration));
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -728,6 +746,7 @@ JSValue IntlDurationFormat::format(JSGlobalObject* globalObject, ISO8601::Durati
         return throwTypeError(globalObject, scope, "failed to format list of strings"_s);
 
     return jsString(vm, String(WTF::move(result)));
+#endif // 0
 }
 
 // https://tc39.es/proposal-intl-duration-format/#sec-Intl.DurationFormat.prototype.formatToParts
@@ -736,6 +755,10 @@ JSValue IntlDurationFormat::formatToParts(JSGlobalObject* globalObject, ISO8601:
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(duration);
+    return throwTypeError(globalObject, scope, "failed to format list of strings"_s);
+
+#if 0
     auto elements = collectElements(globalObject, this, WTF::move(duration));
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -886,6 +909,7 @@ JSValue IntlDurationFormat::formatToParts(JSGlobalObject* globalObject, ISO8601:
     }
 
     return parts;
+#endif // 0
 }
 
 // https://tc39.es/proposal-intl-duration-format/#sec-Intl.DurationFormat.prototype.resolvedOptions
@@ -958,3 +982,4 @@ ASCIILiteral IntlDurationFormat::displayString(Display display)
 } // namespace JSC
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
+

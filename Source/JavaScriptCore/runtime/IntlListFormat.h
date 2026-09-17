@@ -28,15 +28,9 @@
 #include "JSObject.h"
 #include <wtf/unicode/icu/ICUHelpers.h>
 
-struct UListFormatter;
-
 namespace JSC {
 
 enum class RelevantExtensionKey : uint8_t;
-
-struct UListFormatterDeleter {
-    JS_EXPORT_PRIVATE void operator()(UListFormatter*);
-};
 
 class IntlListFormat final : public JSNonFinalObject {
 public:
@@ -76,7 +70,6 @@ private:
     static ASCIILiteral typeString(Type);
     static ASCIILiteral styleString(Style);
 
-    std::unique_ptr<UListFormatter, UListFormatterDeleter> m_listFormat;
     String m_locale;
     Type m_type { Type::Conjunction };
     Style m_style { Style::Long };

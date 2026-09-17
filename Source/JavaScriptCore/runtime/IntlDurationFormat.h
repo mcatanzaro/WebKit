@@ -43,7 +43,7 @@ public:
 
     static void destroy(JSCell* cell)
     {
-        static_cast<IntlDurationFormat*>(cell)->IntlDurationFormat::~IntlDurationFormat();
+        ((IntlDurationFormat*)(cell))->IntlDurationFormat::~IntlDurationFormat();
     }
 
     template<typename CellType, SubspaceAccess mode>
@@ -105,14 +105,6 @@ private:
     static ASCIILiteral unitStyleString(UnitStyle);
     static ASCIILiteral displayString(Display);
 
-    struct FormatterCache {
-        WTF_MAKE_TZONE_ALLOCATED(FormatterCache);
-    public:
-        std::array<std::unique_ptr<UNumberFormatter, UNumberFormatterDeleter>, numberOfTemporalUnits> m_formatters { };
-    };
-
-    std::unique_ptr<UListFormatter, UListFormatterDeleter> m_listFormat;
-    mutable std::unique_ptr<FormatterCache> m_formatterCache;
     String m_locale;
     String m_dataLocale;
     mutable String m_numberingSystem;

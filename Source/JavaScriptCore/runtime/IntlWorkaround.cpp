@@ -36,7 +36,7 @@ namespace JSC {
 
 UBreakIterator* cloneUBreakIterator(const UBreakIterator* iterator, UErrorCode* status)
 {
-    return ubrk_clone(iterator, status);
+    return ubrk_safeClone(iterator, nullptr, nullptr, status);
 }
 
 } // namespace JSC

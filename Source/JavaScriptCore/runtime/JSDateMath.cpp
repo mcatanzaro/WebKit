@@ -75,6 +75,7 @@
 #include "ExceptionHelpers.h"
 #include "ISO8601.h"
 #include "IntlObject.h"
+#include "JSCTimeZone.h"
 #include "VM.h"
 #include <limits>
 #include <wtf/DateMath.h>
@@ -84,30 +85,36 @@
 #include <wtf/unicode/CharacterNames.h>
 #include <wtf/unicode/icu/ICUHelpers.h>
 
-#ifdef U_HIDE_DRAFT_API
-#undef U_HIDE_DRAFT_API
-#endif
-#include <unicode/ucal.h>
-#define U_HIDE_DRAFT_API 1
+// icu::TimeZone and icu::BasicTimeZone features are only available in ICU C++ APIs.
+// We use these C++ APIs as an exception.
+#undef U_SHOW_CPLUSPLUS_API
+#define U_SHOW_CPLUSPLUS_API 1
+#include <unicode/basictz.h>
+#include <unicode/locid.h>
+#include <unicode/timezone.h>
+#include <unicode/unistr.h>
+#undef U_SHOW_CPLUSPLUS_API
+#define U_SHOW_CPLUSPLUS_API 0
 
 namespace JSC {
 namespace JSDateMathInternal {
 static constexpr bool verbose = false;
 }
 
-class OpaqueICUTimeZone {
-    WTF_MAKE_TZONE_ALLOCATED(OpaqueICUTimeZone);
-public:
-    std::unique_ptr<UCalendar, ICUDeleter<ucal_close>> m_calendar;
-    TimeZone m_canonicalTimeZone;
-};
+static icu::TimeZone* toICUTimeZone(OpaqueICUTimeZone* timeZone)
+{
+    return (icu::TimeZone*)timeZone;
+}
 
-WTF_MAKE_TZONE_ALLOCATED_IMPL(OpaqueICUTimeZone);
+static OpaqueICUTimeZone* toOpaqueICUTimeZone(icu::TimeZone* timeZone)
+{
+    return (OpaqueICUTimeZone*)timeZone;
+}
 
 void OpaqueICUTimeZoneDeleter::operator()(OpaqueICUTimeZone* timeZone)
 {
     if (timeZone)
-        delete timeZone;
+        delete toICUTimeZone(timeZone);
 }
 
 // Get the combined UTC + DST offset for the time passed in.
@@ -125,20 +132,16 @@ LocalTimeOffset DateCache::calculateLocalTimeOffset(double millisecondsFromEpoch
     // We can return any values in this case since later we fail when computing non timezone offset part anyway.
     constexpr LocalTimeOffset failed { false, 0 };
 
-    auto& timeZoneCache = *this->timeZoneCache();
-    ucal_setMillis(timeZoneCache.m_calendar.get(), millisecondsFromEpoch, &status);
-    if (U_FAILURE(status))
-        return failed;
-
+    auto& timeZoneCache = *toICUTimeZone(this->timeZoneCache());
     if (inputTimeType != TimeType::LocalTime) {
-        rawOffset = ucal_get(timeZoneCache.m_calendar.get(), UCAL_ZONE_OFFSET, &status);
-        if (U_FAILURE(status))
-            return failed;
-        dstOffset = ucal_get(timeZoneCache.m_calendar.get(), UCAL_DST_OFFSET, &status);
+        constexpr bool isLocalTime = false;
+        timeZoneCache.getOffset(millisecondsFromEpoch, isLocalTime, rawOffset, dstOffset, status);
         if (U_FAILURE(status))
             return failed;
     } else {
-        ucal_getTimeZoneOffsetFromLocal(timeZoneCache.m_calendar.get(), UCAL_TZ_LOCAL_FORMER, UCAL_TZ_LOCAL_FORMER, &rawOffset, &dstOffset, &status);
+        // icu::TimeZone is a timezone instance which inherits icu::BasicTimeZone.
+        // https://unicode-org.atlassian.net/browse/ICU-13705 will move getOffsetFromLocal to icu::TimeZone.
+        static_cast<const icu::BasicTimeZone&>(timeZoneCache).getOffsetFromLocal(millisecondsFromEpoch, icu::BasicTimeZone::kFormer, icu::BasicTimeZone::kFormer, rawOffset, dstOffset, status);
         if (U_FAILURE(status))
             return failed;
     }
@@ -426,77 +429,54 @@ double DateCache::parseDate(JSGlobalObject* globalObject, VM& vm, const String& 
 // https://tc39.es/ecma402/#sec-defaulttimezone
 TimeZone DateCache::defaultTimeZone()
 {
-    return timeZoneCache()->m_canonicalTimeZone;
+    icu::UnicodeString timeZoneID;
+    icu::UnicodeString canonicalTimeZoneID;
+    auto& timeZone = *toICUTimeZone(timeZoneCache());
+    timeZone.getID(timeZoneID);
+
+    UErrorCode status = U_ZERO_ERROR;
+    UBool isSystem = false;
+    icu::TimeZone::getCanonicalID(timeZoneID, canonicalTimeZoneID, isSystem, status);
+    if (U_FAILURE(status))
+        return { };
+
+    String canonical = String({ canonicalTimeZoneID.getBuffer(), static_cast<size_t>(canonicalTimeZoneID.length()) });
+    if (isUTCEquivalent(canonical))
+        return { };
+
+    std::optional<TimeZoneID> resolvedID = intlResolveTimeZoneID(canonical);
+    if (!resolvedID)
+        return { };
+    return TimeZone::fromID(*resolvedID);
 }
 
 String DateCache::timeZoneDisplayName(bool isDST)
 {
     if (m_timeZoneStandardDisplayNameCache.isNull()) {
-        auto& timeZoneCache = *this->timeZoneCache();
-        CString language = defaultLanguage().utf8();
+        auto& timeZoneCache = *toICUTimeZone(this->timeZoneCache());
+        String language = defaultLanguage();
+        icu::Locale locale(language.utf8().data());
         {
-            Vector<char16_t, 32> standardDisplayNameBuffer;
-            auto status = callBufferProducingFunction(ucal_getTimeZoneDisplayName, timeZoneCache.m_calendar.get(), UCAL_STANDARD, language.data(), standardDisplayNameBuffer);
-            if (U_SUCCESS(status))
-                m_timeZoneStandardDisplayNameCache = String::adopt(WTF::move(standardDisplayNameBuffer));
+            icu::UnicodeString standardDisplayName;
+            timeZoneCache.getDisplayName(false /* inDaylight */, icu::TimeZone::LONG, locale, standardDisplayName);
+            m_timeZoneStandardDisplayNameCache = String({ standardDisplayName.getBuffer(), static_cast<size_t>(standardDisplayName.length()) });
         }
         {
-            Vector<char16_t, 32> dstDisplayNameBuffer;
-            auto status = callBufferProducingFunction(ucal_getTimeZoneDisplayName, timeZoneCache.m_calendar.get(), UCAL_DST, language.data(), dstDisplayNameBuffer);
-            if (U_SUCCESS(status))
-                m_timeZoneDSTDisplayNameCache = String::adopt(WTF::move(dstDisplayNameBuffer));
+            icu::UnicodeString dstDisplayName;
+            timeZoneCache.getDisplayName(true /* inDaylight */, icu::TimeZone::LONG, locale, dstDisplayName);
+            m_timeZoneDSTDisplayNameCache = String({ dstDisplayName.getBuffer(), static_cast<size_t>(dstDisplayName.length()) });
         }
     }
+
     if (isDST)
         return m_timeZoneDSTDisplayNameCache;
     return m_timeZoneStandardDisplayNameCache;
 }
 
-static Lock timeZoneCacheLock;
-
 // To confine icu::TimeZone destructor invocation in this file.
 DateCache::DateCache()
 {
     WTF::listenForTimeZoneChangeNotifications();
-}
-
-struct CachedHostTimeZone {
-    TimeZone timeZone;
-    uint64_t timeZoneID { 0 };
-};
-
-static TimeZone retrieveTimeZoneInformation()
-{
-    Locker locker { timeZoneCacheLock };
-    static NeverDestroyed<CachedHostTimeZone> globalCache;
-
-    uint64_t currentID = WTF::lastTimeZoneID();
-#if USE(TIME_ZONE_CHANGE_NOTIFICATIONS)
-    bool isCacheStale = globalCache->timeZoneID != currentID;
-#else
-    bool isCacheStale = true;
-#endif
-    if (isCacheStale) {
-        Vector<char16_t, 32> timeZoneID;
-        getTimeZoneOverride(timeZoneID);
-        TimeZone canonical;
-        UErrorCode status = U_ZERO_ERROR;
-        if (timeZoneID.isEmpty()) {
-            status = callBufferProducingFunction(ucal_getHostTimeZone, timeZoneID);
-            ASSERT_UNUSED(status, U_SUCCESS(status));
-        }
-        if (U_SUCCESS(status)) {
-            // Resolve through intlResolveTimeZoneID so the host TZ collapses onto its IANA
-            // primary identifier (e.g. "Asia/Calcutta" -> "Asia/Kolkata") and UTC-equivalent
-            // names map to the UTC TimeZoneID.
-            String primary = toPrimaryIanaTimeZoneIdentifier(timeZoneID.span());
-            if (auto id = intlResolveTimeZoneID(primary))
-                canonical = TimeZone::fromID(id.value());
-        }
-
-        globalCache.get() = CachedHostTimeZone { canonical, currentID };
-    }
-    return globalCache->timeZone;
 }
 
 DateCache::~DateCache() = default;
@@ -524,17 +504,16 @@ LocalTimeOffset DateCache::localTimeOffset(int64_t millisecondsFromEpoch, TimeTy
 void DateCache::timeZoneCacheSlow()
 {
     ASSERT(!m_timeZoneCache);
-    TimeZone canonical = retrieveTimeZoneInformation();
-    String timeZoneForICU = canonical.toICUString();
-    StringView timeZoneView(timeZoneForICU);
-    auto upconverted = timeZoneView.upconvertedCharacters();
-    auto* cache = new OpaqueICUTimeZone;
-    cache->m_canonicalTimeZone = canonical;
-    UErrorCode status = U_ZERO_ERROR;
-    cache->m_calendar = std::unique_ptr<UCalendar, ICUDeleter<ucal_close>>(ucal_open(upconverted, timeZoneView.length(), "", UCAL_DEFAULT, &status));
-    ASSERT_UNUSED(status, U_SUCCESS(status));
-    ucal_setGregorianChange(cache->m_calendar.get(), minECMAScriptTime, &status); // Ignore "unsupported" error.
-    m_timeZoneCache = std::unique_ptr<OpaqueICUTimeZone, OpaqueICUTimeZoneDeleter>(cache);
+
+    Vector<UChar, 32> timeZoneID;
+    getTimeZoneOverride(timeZoneID);
+
+    if (!timeZoneID.isEmpty()) {
+        m_timeZoneCache = std::unique_ptr<OpaqueICUTimeZone, OpaqueICUTimeZoneDeleter>(toOpaqueICUTimeZone(icu::TimeZone::createTimeZone(icu::UnicodeString(timeZoneID.span().data(), timeZoneID.size()))));
+        return;
+    }
+    // Do not use icu::TimeZone::createDefault. ICU internally has a cache for timezone and createDefault returns this cached value.
+    m_timeZoneCache = std::unique_ptr<OpaqueICUTimeZone, OpaqueICUTimeZoneDeleter>(toOpaqueICUTimeZone(icu::TimeZone::detectHostTimeZone()));
 }
 
 void DateCache::clearForTimeZoneChange()

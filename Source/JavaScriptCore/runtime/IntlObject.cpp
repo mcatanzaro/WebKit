@@ -112,6 +112,7 @@ static JSValue createDisplayNamesConstructor(VM& vm, JSObject* object)
     return IntlDisplayNamesConstructor::create(vm, IntlDisplayNamesConstructor::createStructure(vm, globalObject, globalObject->functionPrototype()), uncheckedDowncast<IntlDisplayNamesPrototype>(globalObject->displayNamesStructure()->storedPrototypeObject()));
 }
 
+#if 0
 static JSValue createDurationFormatConstructor(VM& vm, JSObject* object)
 {
     IntlObject* intlObject = uncheckedDowncast<IntlObject>(object);
@@ -125,6 +126,7 @@ static JSValue createListFormatConstructor(VM& vm, JSObject* object)
     JSGlobalObject* globalObject = intlObject->realm();
     return IntlListFormatConstructor::create(vm, IntlListFormatConstructor::createStructure(vm, globalObject, globalObject->functionPrototype()), uncheckedDowncast<IntlListFormatPrototype>(globalObject->listFormatStructure()->storedPrototypeObject()));
 }
+#endif // 0
 
 static JSValue createLocaleConstructor(VM& vm, JSObject* object)
 {
@@ -174,8 +176,6 @@ namespace JSC {
   Collator              createCollatorConstructor                    DontEnum|PropertyCallback
   DateTimeFormat        createDateTimeFormatConstructor              DontEnum|PropertyCallback
   DisplayNames          createDisplayNamesConstructor                DontEnum|PropertyCallback
-  DurationFormat        createDurationFormatConstructor              DontEnum|PropertyCallback
-  ListFormat            createListFormatConstructor                  DontEnum|PropertyCallback
   Locale                createLocaleConstructor                      DontEnum|PropertyCallback
   NumberFormat          createNumberFormatConstructor                DontEnum|PropertyCallback
   PluralRules           createPluralRulesConstructor                 DontEnum|PropertyCallback

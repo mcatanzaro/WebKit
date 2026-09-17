@@ -53,14 +53,6 @@ template<typename IntlType> void setNumberFormatDigitOptions(JSGlobalObject*, In
 template<typename IntlType> void appendNumberFormatDigitOptionsToSkeleton(IntlType*, StringBuilder&);
 template<typename IntlType> void appendNumberFormatNotationOptionsToSkeleton(IntlType*, StringBuilder&);
 
-struct UNumberFormatterDeleter {
-    JS_EXPORT_PRIVATE void operator()(UNumberFormatter*);
-};
-
-struct UNumberRangeFormatterDeleter {
-    JS_EXPORT_PRIVATE void operator()(UNumberRangeFormatter*);
-};
-
 // Approximate sizes of ICU objects for GC memory pressure reporting, measured empirically with unumf_open + format.
 inline constexpr size_t estimatedUNumberFormatterSize = 1000;
 inline constexpr size_t estimatedUNumberRangeFormatterSize = 20000;
@@ -167,14 +159,7 @@ public:
     JSValue format(JSGlobalObject*, double) const;
     JSValue format(JSGlobalObject*, IntlMathematicalValue&&) const;
     JSValue formatToParts(JSGlobalObject*, double, JSString* sourceType = nullptr) const;
-    JSValue formatToParts(JSGlobalObject*, IntlMathematicalValue&&, JSString* sourceType = nullptr) const;
     JSObject* resolvedOptions(JSGlobalObject*) const;
-
-    JSValue formatRange(JSGlobalObject*, double, double);
-    JSValue formatRange(JSGlobalObject*, IntlMathematicalValue&&, IntlMathematicalValue&&);
-
-    JSValue formatRangeToParts(JSGlobalObject*, double, double);
-    JSValue formatRangeToParts(JSGlobalObject*, IntlMathematicalValue&&, IntlMathematicalValue&&);
 
     JSBoundFunction* boundFormat() const LIFETIME_BOUND { return m_boundFormat.get(); }
     void setBoundFormat(VM&, JSBoundFunction*);
@@ -222,8 +207,6 @@ private:
     static JSValue useGroupingValue(VM&, UseGrouping);
 
     WriteBarrier<JSBoundFunction> m_boundFormat;
-    std::unique_ptr<UNumberFormatter, UNumberFormatterDeleter> m_numberFormatter;
-    std::unique_ptr<UNumberRangeFormatter, UNumberRangeFormatterDeleter> m_numberRangeFormatter;
     String m_numberFormatterSkeleton;
     CString m_dataLocaleWithExtensions;
 

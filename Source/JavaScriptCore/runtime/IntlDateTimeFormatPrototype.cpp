@@ -45,7 +45,6 @@ namespace JSC {
 
 static JSC_DECLARE_CUSTOM_GETTER(intlDateTimeFormatPrototypeGetterFormat);
 static JSC_DECLARE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRange);
-static JSC_DECLARE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRangeToParts);
 static JSC_DECLARE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatToParts);
 static JSC_DECLARE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncResolvedOptions);
 static JSC_DECLARE_HOST_FUNCTION(intlDateTimeFormatFuncFormatDateTime);
@@ -62,7 +61,6 @@ const ClassInfo IntlDateTimeFormatPrototype::s_info = { "Intl.DateTimeFormat"_s,
 @begin dateTimeFormatPrototypeTable
   format                intlDateTimeFormatPrototypeGetterFormat              DontEnum|ReadOnly|CustomAccessor
   formatRange           intlDateTimeFormatPrototypeFuncFormatRange           DontEnum|Function 2
-  formatRangeToParts    intlDateTimeFormatPrototypeFuncFormatRangeToParts    DontEnum|Function 2
   formatToParts         intlDateTimeFormatPrototypeFuncFormatToParts         DontEnum|Function 1
   resolvedOptions       intlDateTimeFormatPrototypeFuncResolvedOptions       DontEnum|Function 0
 @end
@@ -333,6 +331,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRange, (JSGlobalOb
     RELEASE_AND_RETURN(scope, JSValue::encode(dateTimeFormat->formatRange(globalObject, startDate, endDate)));
 }
 
+#if 0
 // https://tc39.es/proposal-temporal/#sec-Intl.DateTimeFormat.prototype.formatRangeToParts
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRangeToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
@@ -363,6 +362,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRangeToParts, (JSG
     // Step 6: Return ?FormatDateTimeRangeToParts(dtf, x, y) — PartitionDateTimeRangePattern inside.
     RELEASE_AND_RETURN(scope, JSValue::encode(dateTimeFormat->formatRangeToParts(globalObject, startDate, endDate)));
 }
+#endif // 0
 
 // https://tc39.es/ecma402/#sec-intl.datetimeformat.prototype.resolvedoptions
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
@@ -379,3 +379,4 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncResolvedOptions, (JSGlob
 }
 
 } // namespace JSC
+

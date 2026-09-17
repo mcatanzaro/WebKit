@@ -35,9 +35,6 @@
 namespace JSC {
 
 static JSC_DECLARE_CUSTOM_GETTER(intlNumberFormatPrototypeGetterFormat);
-static JSC_DECLARE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRange);
-static JSC_DECLARE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRangeToParts);
-static JSC_DECLARE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatToParts);
 static JSC_DECLARE_HOST_FUNCTION(intlNumberFormatPrototypeFuncResolvedOptions);
 static JSC_DECLARE_HOST_FUNCTION(intlNumberFormatFuncFormat);
 
@@ -52,9 +49,6 @@ const ClassInfo IntlNumberFormatPrototype::s_info = { "Intl.NumberFormat"_s, &Ba
 /* Source for IntlNumberFormatPrototype.lut.h
 @begin numberFormatPrototypeTable
   format              intlNumberFormatPrototypeGetterFormat            DontEnum|ReadOnly|CustomAccessor
-  formatRange         intlNumberFormatPrototypeFuncFormatRange         DontEnum|Function 2
-  formatRangeToParts  intlNumberFormatPrototypeFuncFormatRangeToParts  DontEnum|Function 2
-  formatToParts       intlNumberFormatPrototypeFuncFormatToParts       DontEnum|Function 1
   resolvedOptions     intlNumberFormatPrototypeFuncResolvedOptions     DontEnum|Function 0
 @end
 */
@@ -134,6 +128,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlNumberFormatPrototypeGetterFormat, (JSGlobalObject*
     return JSValue::encode(boundFormat);
 }
 
+#if 0
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRange, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
@@ -215,6 +210,7 @@ JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRangeToParts, (JSGlo
 
     RELEASE_AND_RETURN(scope, JSValue::encode(numberFormat->formatRangeToParts(globalObject, WTF::move(start), WTF::move(end))));
 }
+#endif // 0
 
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
@@ -232,3 +228,4 @@ JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncResolvedOptions, (JSGlobal
 }
 
 } // namespace JSC
+

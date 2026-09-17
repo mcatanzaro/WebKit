@@ -1671,6 +1671,8 @@ static bool dateFieldsPracticallyEqual(const UFormattedValue* formattedValue, UE
     return !hasSpan;
 }
 
+#if 0
+
 auto IntlDateTimeFormat::prepareDateRange(JSGlobalObject* globalObject, double& startDate, double& endDate) -> std::optional<DateRangePreamble>
 {
     ASSERT(m_impl->m_dateFormat);
@@ -1714,6 +1716,8 @@ auto IntlDateTimeFormat::prepareDateRange(JSGlobalObject* globalObject, double& 
 
     return DateRangePreamble { std::unique_ptr<UFormattedDateInterval, UFormattedDateIntervalDeleter>(result.release()), formattedValue, equal };
 }
+
+#endif // 0
 
 // https://tc39.es/proposal-temporal/#sec-partitiondatetimerangepattern
 //
@@ -1816,6 +1820,7 @@ auto IntlDateTimeFormat::partitionDateTimeRangePattern(JSGlobalObject* globalObj
     };
 }
 
+#if 0
 static JSValue buildFormattedDateIntervalParts(JSGlobalObject* globalObject, const UFormattedValue* formattedValue)
 {
     VM& vm = globalObject->vm();
@@ -1983,14 +1988,20 @@ static JSValue buildFormattedDateIntervalParts(JSGlobalObject* globalObject, con
 
     return parts;
 }
+#endif
 
 // https://tc39.es/proposal-temporal/#sec-formatdatetimerangetoparts
 JSValue IntlDateTimeFormat::formatRangeToParts(JSGlobalObject* globalObject, JSValue xValue, JSValue yValue)
 {
     ASSERT(m_impl->m_dateFormat);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(xValue);
+    UNUSED_PARAM(yValue);
+
+    return { };
+
+#if 0
     auto preamble = partitionDateTimeRangePattern(globalObject, xValue, yValue);
     RETURN_IF_EXCEPTION(scope, { });
     if (!preamble)
@@ -2010,6 +2021,7 @@ JSValue IntlDateTimeFormat::formatRangeToParts(JSGlobalObject* globalObject, JSV
     if (preamble->equal)
         RELEASE_AND_RETURN(scope, buildFormattedDateTimeParts(globalObject, preamble->tempFormat, preamble->startMs, jsNontrivialString(vm, "shared"_s)));
     RELEASE_AND_RETURN(scope, buildFormattedDateIntervalParts(globalObject, preamble->formattedValue));
+#endif
 }
 
 // BitSet<128> of ASCII pattern letters for each Temporal field kind.
@@ -2470,6 +2482,13 @@ JSValue IntlDateTimeFormat::formatRange(JSGlobalObject* globalObject, JSValue xV
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    UNUSED_PARAM(xValue);
+    UNUSED_PARAM(yValue);
+
+    throwTypeError(globalObject, scope, "Failed to format date interval"_s);
+    return { };
+
+#if 0
     auto preamble = partitionDateTimeRangePattern(globalObject, xValue, yValue);
     RETURN_IF_EXCEPTION(scope, { });
     if (!preamble)
@@ -2516,8 +2535,10 @@ JSValue IntlDateTimeFormat::formatRange(JSGlobalObject* globalObject, JSValue xV
     Vector<char16_t, 32> resultChars(std::span(chars, length));
     replaceNarrowNoBreakSpaceOrThinSpaceWithNormalSpace(resultChars);
     return jsString(vm, String(WTF::move(resultChars)));
+#endif // 0
 }
 
 } // namespace JSC
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
+
