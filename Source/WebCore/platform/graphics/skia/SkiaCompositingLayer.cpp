@@ -388,7 +388,7 @@ void SkiaCompositingLayer::setDebugIndicators(Color&& debugBorderColor, std::opt
 
 const TransformationMatrix& SkiaCompositingLayer::localTransform() const
 {
-    if (!m_animationsState || !m_animationsState->isRunning)
+    if (!m_animationsState)
         return m_transform;
 
     return m_animationsState->transform ? m_animationsState->transform.value() : m_transform;
@@ -396,7 +396,7 @@ const TransformationMatrix& SkiaCompositingLayer::localTransform() const
 
 const TransformationMatrix& SkiaCompositingLayer::futureLocalTransform() const
 {
-    if (!m_animationsState || !m_animationsState->isRunning)
+    if (!m_animationsState)
         return m_transform;
 
     return m_animationsState->futureTransform ? m_animationsState->futureTransform.value() : localTransform();
@@ -404,7 +404,7 @@ const TransformationMatrix& SkiaCompositingLayer::futureLocalTransform() const
 
 float SkiaCompositingLayer::opacityForAnimationsState(const AnimationsState* animationsState) const
 {
-    if (!animationsState || !animationsState->isRunning)
+    if (!animationsState)
         return m_opacity;
 
     return animationsState->opacity.value_or(m_opacity);
@@ -417,7 +417,7 @@ float SkiaCompositingLayer::opacity() const
 
 const std::optional<SkiaCompositingLayer::Filter> SkiaCompositingLayer::filter() const
 {
-    if (!m_animationsState || !m_animationsState->isRunning)
+    if (!m_animationsState)
         return m_filter;
 
     return m_animationsState->filter ? m_animationsState->filter : m_filter;
