@@ -1483,6 +1483,42 @@ static void testWebKitInputMethodContextContentType(InputMethodTest* test, gcons
     test->unfocusEditableAndWaitUntilInputMethodDisabled();
 }
 
+static void testWebKitInputMethodContextInputMode(InputMethodTest* test, gconstpointer)
+{
+    // Focus by click, because element.focus() always adds INHIBIT_OSK and would hide inputmode="none".
+    auto checkInput = [&](const char* attributes, WebKitInputPurpose purpose, unsigned hints) {
+        GUniquePtr<char> html(g_strdup_printf("<input id='editable' spellcheck='false' %s>", attributes));
+        test->loadHtml(html.get(), nullptr);
+        test->waitUntilLoadFinished();
+        test->clickMouseButton(20, 20);
+        test->assertJavaScriptBecomesTrue("document.activeElement.id === 'editable'");
+        test->waitUntilInputMethodEnabled();
+        g_assert_cmpuint(test->purpose(), ==, purpose);
+        g_assert_cmpuint(test->hints(), ==, hints);
+        test->unfocusEditableAndWaitUntilInputMethodDisabled();
+    };
+
+    checkInput("inputmode='numeric'", WEBKIT_INPUT_PURPOSE_DIGITS, 0);
+    checkInput("inputmode='decimal'", WEBKIT_INPUT_PURPOSE_NUMBER, 0);
+    checkInput("inputmode='tel'", WEBKIT_INPUT_PURPOSE_PHONE, 0);
+    checkInput("inputmode='email'", WEBKIT_INPUT_PURPOSE_EMAIL, 0);
+    checkInput("inputmode='url'", WEBKIT_INPUT_PURPOSE_URL, 0);
+    checkInput("inputmode='search'", WEBKIT_INPUT_PURPOSE_SEARCH, 0);
+    checkInput("inputmode='text'", WEBKIT_INPUT_PURPOSE_FREE_FORM, 0);
+    checkInput("inputmode='none'", WEBKIT_INPUT_PURPOSE_FREE_FORM, WEBKIT_INPUT_HINT_INHIBIT_OSK);
+
+    // inputmode wins over the purpose derived from the type.
+    checkInput("type='email' inputmode='numeric'", WEBKIT_INPUT_PURPOSE_DIGITS, 0);
+
+    // A missing or invalid inputmode keeps the purpose derived from the type.
+    checkInput("type='tel'", WEBKIT_INPUT_PURPOSE_PHONE, 0);
+    checkInput("type='tel' inputmode='invalid'", WEBKIT_INPUT_PURPOSE_PHONE, 0);
+
+    // A password field keeps its purpose, but inputmode="none" still inhibits the keyboard.
+    checkInput("type='password' inputmode='numeric'", WEBKIT_INPUT_PURPOSE_PASSWORD, 0);
+    checkInput("type='password' inputmode='none'", WEBKIT_INPUT_PURPOSE_PASSWORD, WEBKIT_INPUT_HINT_INHIBIT_OSK);
+}
+
 void beforeAll()
 {
     InputMethodTest::add("WebKitInputMethodContext", "simple", testWebKitInputMethodContextSimple);
@@ -1498,6 +1534,7 @@ void beforeAll()
     InputMethodTest::add("WebKitInputMethodContext", "focus-change", testWebKitInputMethodContextFocusChange);
     InputMethodTest::add("WebKitInputMethodContext", "focus-interaction", testWebKitInputMethodContextFocusInteraction);
     InputMethodTest::add("WebKitInputMethodContext", "content-type", testWebKitInputMethodContextContentType);
+    InputMethodTest::add("WebKitInputMethodContext", "input-mode", testWebKitInputMethodContextInputMode);
 }
 
 void afterAll()
