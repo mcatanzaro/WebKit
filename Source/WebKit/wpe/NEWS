@@ -1,4 +1,31 @@
 =================
+WPE WebKit 2.54.1
+=================
+
+What's new in WPE WebKit 2.54.1?
+
+  - Allow pasting in-memory image data from clipboard.
+  - Add User-Agent quirk for Amazon Luna.
+  - Handle scrolling through touch input asynchronously.
+  - Align the filter surface with the device pixel grid.
+  - Do not rasterize the part of a tile that the clip drops.
+  - Fix rendering of scaled or transformed no-repeat background images.
+  - Fix rendering of preserve-3d layers when a layer crosses the camera plane.
+  - Fix SkiaCompositingLayer filter rendering under transforms.
+  - Fix the WPEPlatform built-in Wayland support with libwayland-client 1.25
+    or newer.
+  - Fix the build with ENABLE_WPE_1_1_API enabled.
+  - Fix text deleted by input method delete-surrounding in contenteditable.
+  - Fix the "inputmode" attribute being ignored for <input> elements.
+  - Fix input methods not updated when refocusing elements in some cases.
+  - Fix caret position reporting to input methods during pre-edit.
+  - Fix memory usage thresholds not being reached due to incorrect memory
+    footprint calculation.
+  - Fix the build with PGO profile instrumentation enabled when using the
+    GNU linker (ld.bfd).
+  - Fix several crashes and rendering issues.
+
+=================
 WPE WebKit 2.54.0
 =================
 
