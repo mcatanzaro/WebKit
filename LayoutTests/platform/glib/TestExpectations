@@ -4489,8 +4489,6 @@ imported/w3c/web-platform-tests/html/browsers/browsing-the-web/read-media/pagelo
 webkit.org/b/277255 fast/forms/datalist/datalist-searchinput-appearance.html [ Failure Pass ]
 
 # Touch events related layout tests failing
-webkit.org/b/278719 fast/events/touch/basic-multi-touch-events.html [ Failure ]
-webkit.org/b/278719 fast/events/touch/basic-multi-touch-events-limited.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/document-create-touch.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/document-create-touch-list.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/document-create-touch-list-ios.html [ Failure ]
@@ -4515,7 +4513,6 @@ webkit.org/b/278719 fast/events/touch/scroll-without-mouse-lacks-mousemove-event
 webkit.org/b/278719 fast/events/touch/touch-constructor.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/touch-input-element-change-documents.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/touch-scaled-scrolled.html [ Failure ]
-webkit.org/b/278719 fast/events/touch/touch-target.html [ Timeout ]
 webkit.org/b/278719 fast/events/touch/touch-target-limited.html [ Timeout ]
 webkit.org/b/278719 fast/events/touch/zoomed-touch-event-pageXY.html [ Timeout ]
 webkit.org/b/278719 imported/w3c/web-platform-tests/touch-events/historical.html [ Failure ]
@@ -5001,8 +4998,6 @@ http/tests/workers/service/service-worker-download-octet-stream-nosniff.https.ht
 
 # Resource timing tests are flaky due to redirect timing variability
 webkit.org/b/197473 imported/w3c/web-platform-tests/speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=waitingForRedirect [ Pass Failure ]
-
-webkit.org/b/278719 fast/events/touch/inserted-fragment-touch-target.html [ Timeout ]
 
 # This test has been failing on glib ports since its creation.
 imported/w3c/web-platform-tests/css/css-text/text-autospace/text-autospace-supplementary-ideograph.html [ ImageOnlyFailure ]

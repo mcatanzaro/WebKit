@@ -1089,7 +1089,6 @@ http/tests/login-status/login-status-api-getter-setter-functions.html [ Failure 
 
 imported/w3c/web-platform-tests/css/css-overflow/overflow-auto-scrolling-with-margin-and-transform.html [ Skip ]
 
-webkit.org/b/278719 fast/events/touch/basic-single-touch-events.html [ Timeout ]
 webkit.org/b/278719 fast/events/touch/emulate-touch-events.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/touch-event-frames.html [ Failure ]
 webkit.org/b/278719 fast/events/touch/touch-event-pageXY.html [ Failure ]
