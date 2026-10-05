@@ -960,6 +960,9 @@ if (SWIFT_REQUIRED)
         ${WebKit_DERIVED_SOURCES_DIR}/UIProcess/WebBackForwardListMessageReceiver.cpp
         ${WebKit_DERIVED_SOURCES_DIR}/Shared/IPCTesterReceiverMessageReceiver.cpp
     )
+    if (NOT WIN32 AND NOT PORT STREQUAL "WPE")
+        list(APPEND WebKit_SWIFT_INTEROP_SOURCES UIProcess/ViewGestureController.cpp)
+    endif ()
     if (APPLE)
         list(APPEND WebKit_SWIFT_INTEROP_SOURCES
             UIProcess/API/ios/WKWebViewIOS.mm
