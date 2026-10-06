@@ -1318,3 +1318,6 @@ compositing/clipping/cached-cliprect-with-compositing-boundary.html [ ImageOnlyF
 # Gardening 2026-09-08
 webkit.org/b/323696 fast/history/site-isolation/history-back-initial-vs-final-url.html [ Failure Pass ]
 webkit.org/b/323696 platform/glib/damage/video.html [ Failure Pass ]
+
+webkit.org/b/324374 webgl/1.0.x/conformance/textures/misc/texture-size-limit.html [ Failure ]
+webkit.org/b/324374 webgl/2.0.y/conformance/textures/misc/texture-size-limit.html [ Failure ]
