@@ -22,6 +22,7 @@
 #include "TestMain.h"
 #include "WebViewTest.h"
 #include <algorithm>
+#include <wtf/glib/GSpanExtras.h>
 #include <wtf/glib/GUniquePtr.h>
 
 #if PLATFORM(GTK)
@@ -189,6 +190,19 @@ static gboolean webkitInputMethodContextMockFilterKeyEvent(WebKitInputMethodCont
         mock->preedit = nullptr;
         g_signal_emit_by_name(context, "preedit-changed", nullptr);
         g_signal_emit_by_name(context, "preedit-finished", nullptr);
+
+        return TRUE;
+    }
+
+    if (keyval == KEY(BackSpace)) {
+        if (!isKeyPress)
+            return FALSE;
+
+        // Make the preedit shorter, but keep the "w" that started it.
+        if (mock->preedit->len > 1) {
+            g_string_truncate(mock->preedit, mock->preedit->len - 1);
+            g_signal_emit_by_name(context, "preedit-changed", nullptr);
+        }
 
         return TRUE;
     }
@@ -701,6 +715,40 @@ public:
         g_main_loop_run(m_mainLoop);
         m_expectedSurroundingText = { };
     }
+
+#if PLATFORM(GTK) || ENABLE(2022_GLIB_API)
+    // The pixels of the visible part of the view, to compare two renderings of the same page.
+    Vector<uint8_t> snapshotPixels()
+    {
+        webkit_web_view_get_snapshot(m_webView.get(), WEBKIT_SNAPSHOT_REGION_VISIBLE, WEBKIT_SNAPSHOT_OPTIONS_NONE, nullptr, [](GObject* webView, GAsyncResult* result, gpointer userData) {
+            auto* test = static_cast<InputMethodTest*>(userData);
+            GUniqueOutPtr<GError> error;
+#if USE(GTK4)
+            GRefPtr<GdkTexture> texture = adoptGRef(webkit_web_view_get_snapshot_finish(WEBKIT_WEB_VIEW(webView), result, &error.outPtr()));
+            g_assert_no_error(error.get());
+            auto stride = gdk_texture_get_width(texture.get()) * 4;
+            test->m_snapshotPixels.resize(stride * gdk_texture_get_height(texture.get()));
+            gdk_texture_download(texture.get(), test->m_snapshotPixels.mutableSpan().data(), stride);
+#elif PLATFORM(GTK)
+            auto* surface = webkit_web_view_get_snapshot_finish(WEBKIT_WEB_VIEW(webView), result, &error.outPtr());
+            g_assert_no_error(error.get());
+            cairo_surface_flush(surface);
+            test->m_snapshotPixels.append(unsafeMakeSpan(cairo_image_surface_get_data(surface), cairo_image_surface_get_stride(surface) * cairo_image_surface_get_height(surface)));
+            cairo_surface_destroy(surface);
+#else
+            GRefPtr<WebKitImage> image = adoptGRef(webkit_web_view_get_snapshot_finish(WEBKIT_WEB_VIEW(webView), result, &error.outPtr()));
+            g_assert_no_error(error.get());
+            test->m_snapshotPixels.append(span(webkit_image_as_bytes(image.get())));
+#endif
+            test->quitMainLoop();
+        }, this);
+        g_main_loop_run(m_mainLoop);
+        g_assert_false(m_snapshotPixels.isEmpty());
+        return std::exchange(m_snapshotPixels, { });
+    }
+
+    Vector<uint8_t> m_snapshotPixels;
+#endif
 
     GRefPtr<WebKitInputMethodContextMock> m_context;
     Vector<Event> m_events;
@@ -1295,6 +1343,68 @@ static void testWebKitInputMethodContextPreeditOverSelection(InputMethodTest* te
     }
 }
 
+#if PLATFORM(GTK) || ENABLE(2022_GLIB_API)
+// A contenteditable, because an <input> clips the bottom row of its line, where the preedit underline is painted.
+// The caret is set inside the text, so that an underline running past the end of the preedit is painted under it.
+static const char* preeditUnderlinesHTML = "<html><body>"
+    "<div id='editable' contenteditable spellcheck='false' style='font: 40px monospace; caret-color: transparent'"
+    " onkeydown='logKeyDown()' onkeyup='logKeyUp()' onkeypress='logKeyPress()'>abcdefgh</div><script>"
+    "editable.addEventListener('compositionstart', logCompositionEvent);"
+    "editable.addEventListener('compositionupdate', logCompositionEvent);"
+    "editable.addEventListener('compositionend', logCompositionEvent);"
+    "function logCompositionEvent(event) { window.webkit.messageHandlers.imEvent.postMessage({ 'type' : event.type, 'data' : event.data }) }"
+    "function logKeyDown() { window.webkit.messageHandlers.imEvent.postMessage({ 'type' : 'keyDown', 'keyCode' : event.keyCode, 'key' : event.key, 'isComposing' : event.isComposing }) }"
+    "function logKeyUp() { window.webkit.messageHandlers.imEvent.postMessage({ 'type' : 'keyUp', 'keyCode' : event.keyCode, 'key' : event.key, 'isComposing' : event.isComposing }) }"
+    "function logKeyPress() { window.webkit.messageHandlers.imEvent.postMessage({ 'type' : 'keyPress', 'keyCode' : event.keyCode }) }"
+    "</script></body></html>";
+
+static void testWebKitInputMethodContextPreeditUnderlines(InputMethodTest* test, gconstpointer)
+{
+    test->loadHtml(preeditUnderlinesHTML, nullptr);
+    test->waitUntilLoadFinished();
+
+    test->focusEditableAndWaitUntilInputMethodEnabled();
+    test->runJavaScriptAndWaitUntilFinished("getSelection().collapse(editable.firstChild, 4)", nullptr);
+
+    // Make the preedit longer, "wxyz", then shorter, "wx".
+    test->keyStrokeAndWaitForEvents(KEY(w), 4, { WebViewTest::Modifiers::Control, WebViewTest::Modifiers::Shift });
+    test->m_events.clear();
+    for (auto keyval : { KEY(x), KEY(y), KEY(z), KEY(BackSpace), KEY(BackSpace) }) {
+        test->keyStrokeAndWaitForEvents(keyval, 3);
+        test->m_events.clear();
+    }
+    {
+        auto textContent = test->editableTextContent();
+        g_assert_cmpstr(textContent.get(), ==, "abcdwxefgh");
+    }
+    auto shortenedPreeditPixels = test->snapshotPixels();
+
+    test->keyStrokeAndWaitForEvents(KEY(Escape), 3);
+    test->m_events.clear();
+    {
+        auto textContent = test->editableTextContent();
+        g_assert_cmpstr(textContent.get(), ==, "abcdefgh");
+    }
+    test->runJavaScriptAndWaitUntilFinished("getSelection().collapse(editable.firstChild, 4)", nullptr);
+
+    // The same preedit, "wx", typed directly.
+    test->keyStrokeAndWaitForEvents(KEY(w), 4, { WebViewTest::Modifiers::Control, WebViewTest::Modifiers::Shift });
+    test->m_events.clear();
+    test->keyStrokeAndWaitForEvents(KEY(x), 3);
+    test->m_events.clear();
+    {
+        auto textContent = test->editableTextContent();
+        g_assert_cmpstr(textContent.get(), ==, "abcdwxefgh");
+    }
+    auto typedPreeditPixels = test->snapshotPixels();
+
+    // No underline of the longer preedit may be left under "ef".
+    g_assert_true(shortenedPreeditPixels == typedPreeditPixels);
+
+    test->keyStrokeAndWaitForEvents(KEY(Escape), 3);
+}
+#endif
+
 static void testWebKitInputMethodContextFocusChange(InputMethodTest* test, gconstpointer)
 {
     test->loadHtml(twoFieldsHTML, nullptr);
@@ -1568,6 +1678,9 @@ void beforeAll()
     InputMethodTest::add("WebKitInputMethodContext", "cursor-area", testWebKitInputMethodContextCursorArea);
     InputMethodTest::add("WebKitInputMethodContext", "preedit-cursor", testWebKitInputMethodContextPreeditCursor);
     InputMethodTest::add("WebKitInputMethodContext", "preedit-over-selection", testWebKitInputMethodContextPreeditOverSelection);
+#if PLATFORM(GTK) || ENABLE(2022_GLIB_API)
+    InputMethodTest::add("WebKitInputMethodContext", "preedit-underlines", testWebKitInputMethodContextPreeditUnderlines);
+#endif
     InputMethodTest::add("WebKitInputMethodContext", "focus-change", testWebKitInputMethodContextFocusChange);
     InputMethodTest::add("WebKitInputMethodContext", "focus-interaction", testWebKitInputMethodContextFocusInteraction);
     InputMethodTest::add("WebKitInputMethodContext", "content-type", testWebKitInputMethodContextContentType);
