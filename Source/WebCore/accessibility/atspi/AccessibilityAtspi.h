@@ -70,6 +70,12 @@ public:
     void parentChanged(AccessibilityObjectAtspi&);
     void parentChanged(AccessibilityRootAtspi&);
     enum class ChildrenChanged { Added, Removed };
+
+    struct PendingRootRegistration {
+        Ref<AccessibilityRootAtspi> root;
+        Vector<std::pair<GDBusInterfaceInfo*, GDBusInterfaceVTable*>> interfaces;
+        CompletionHandler<void(const String&)> completionHandler;
+    };
     void childrenChanged(AccessibilityObjectAtspi&, AccessibilityObjectAtspi&, ChildrenChanged);
     void childrenChanged(AccessibilityRootAtspi&, AccessibilityObjectAtspi&, ChildrenChanged);
 
@@ -100,12 +106,7 @@ public:
 private:
     AccessibilityAtspi();
 
-    struct PendingRootRegistration {
-        Ref<AccessibilityRootAtspi> root;
-        Vector<std::pair<GDBusInterfaceInfo*, GDBusInterfaceVTable*>> interfaces;
-        CompletionHandler<void(const String&)> completionHandler;
-    };
-
+    bool isConnected() const { return m_connection && !m_isConnecting; }
     void didConnect(GRefPtr<GDBusConnection>&&);
     void didOwnName();
     void initializeRegistry();
