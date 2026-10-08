@@ -605,7 +605,46 @@ constexpr vk::SkippedSyncvalMessage kSkippedSyncvalMessages[] = {
       "prior_access = "
       "VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT(VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)",
       "command = vkCmdBeginRenderPass", "prior_command = vkCmdEndRenderPass",
-      "load_op = VK_ATTACHMENT_LOAD_OP_LOAD"}}};
+      "load_op = VK_ATTACHMENT_LOAD_OP_LOAD"}},
+    // Observed on Intel after a VVL roll
+    // BufferDataTestES3.CopyBufferSubDataSelfDependency/ES3_Vulkan
+    // http://anglebug.com/565993690
+    {"SYNC-HAZARD-WRITE-AFTER-WRITE",
+     false,
+     {
+         "message_type = RenderPassStoreOpError",
+         "hazard_type = WRITE_AFTER_WRITE",
+         "access = "
+         "VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT(VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_"
+         "BIT)",
+         "prior_access = SYNC_IMAGE_LAYOUT_TRANSITION",
+         "write_barriers = "
+         "VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT(VK_ACCESS_2_UNIFORM_READ_BIT|VK_ACCESS_2_COLOR_"
+         "ATTACHMENT_READ_BIT|VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT):VK_PIPELINE_STAGE_2_"
+         "EARLY_FRAGMENT_TESTS_BIT|VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT(VK_ACCESS_2_DEPTH_"
+         "STENCIL_ATTACHMENT_READ_BIT):VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT(VK_ACCESS_2_"
+         "COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT)",
+         "command = vkCmdEndRenderPass",
+         "prior_command = vkCmdPipelineBarrier",
+         "store_op = VK_ATTACHMENT_STORE_OP_STORE",
+     }},
+    // Observed on Nvidia and Intel after a VVL roll
+    // FramebufferFetchES31.ReopenRenderPass/ES3_1_Vulkan
+    // http://anglebug.com/565993690
+    {"SYNC-HAZARD-WRITE-AFTER-WRITE",
+     false,
+     {
+         "message_type = RenderPassStoreOpError",
+         "hazard_type = WRITE_AFTER_WRITE",
+         "access = "
+         "VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT(VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT)",
+         "prior_access = SYNC_IMAGE_LAYOUT_TRANSITION",
+         "write_barriers = 0",
+         "command = vkCmdEndRenderPass",
+         "prior_command = vkCmdEndRenderPass",
+         "store_op = VK_ATTACHMENT_STORE_OP_STORE",
+     }},
+};
 
 // Messages that should not be generated if the feature to force-enable providing the size pointer
 // to vkCmdBindVertexBuffers2() is disabled.
@@ -2570,10 +2609,8 @@ angle::Result Renderer::initialize(vk::ErrorContext *context,
         {
             ANGLE_SCOPED_DISABLE_LSAN();
             ANGLE_SCOPED_DISABLE_MSAN();
-            ANGLE_VK_TRY(context,
-                         VK_CALL_WITH_GROUP(
-                             GetPerfCounterGroup(VulkanApiFunction::vkEnumerateInstanceVersion),
-                             enumerateInstanceVersion(&mInstanceVersion)));
+            ANGLE_VK_TRY(context, VK_CALL_WITH_API(VulkanApiFunction::vkEnumerateInstanceVersion,
+                                                   enumerateInstanceVersion(&mInstanceVersion)));
         }
 
         if (IsVulkan11(mInstanceVersion))
@@ -2630,24 +2667,21 @@ angle::Result Renderer::initialize(vk::ErrorContext *context,
     // Fine grain control of validation layer features
     const char *name                     = "VK_LAYER_KHRONOS_validation";
     const VkBool32 setting_validate_core = VK_TRUE;
-    // SyncVal is very slow (https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/7285)
-    // for VkEvent which causes a few tests fail on the bots. Disable syncVal if VkEvent is enabled
-    // for now.
     const VkBool32 setting_validate_sync = IsAndroid() ? VK_FALSE : VK_TRUE;
     const VkBool32 setting_thread_safety = VK_TRUE;
     // http://anglebug.com/42265520 - Shader validation caching is broken on Android
     const VkBool32 setting_check_shaders = IsAndroid() ? VK_FALSE : VK_TRUE;
     // http://b/316013423 Disable QueueSubmit Synchronization Validation. Lots of failures and some
     // test timeout due to https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/7285
-    const VkBool32 setting_syncval_submit_time_validation   = VK_FALSE;
+    const VkBool32 setting_syncval_full_validation          = VK_FALSE;
     const VkBool32 setting_syncval_message_extra_properties = VK_TRUE;
     const VkLayerSettingEXT layerSettings[]                 = {
         {name, "validate_core", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &setting_validate_core},
         {name, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &setting_validate_sync},
         {name, "thread_safety", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &setting_thread_safety},
         {name, "check_shaders", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &setting_check_shaders},
-        {name, "syncval_submit_time_validation", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
-         &setting_syncval_submit_time_validation},
+        {name, "syncval_full_validation", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
+         &setting_syncval_full_validation},
         {name, "syncval_message_extra_properties", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1,
          &setting_syncval_message_extra_properties},
     };
@@ -2708,8 +2742,8 @@ angle::Result Renderer::initialize(vk::ErrorContext *context,
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
     ANGLE_VK_TRY(context, VK_CALL(vkEnumeratePhysicalDevices, mInstance, &physicalDeviceCount,
                                   physicalDevices.data()));
-    VK_CALL_WITH_GROUP(
-        GetPerfCounterGroup(VulkanApiFunction::vkGetPhysicalDeviceProperties2),
+    VK_CALL_WITH_API(
+        VulkanApiFunction::vkGetPhysicalDeviceProperties2,
         ChoosePhysicalDevice(vkGetPhysicalDeviceProperties2, physicalDevices, mEnabledICD,
                              preferredVendorId, preferredDeviceId, preferredDeviceUuid,
                              preferredDriverUuid, preferredDriverId, &mPhysicalDevice,
